@@ -57,8 +57,5 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"
-  },
-  "build": {
-    "outDir": "dist"
   }
 }
