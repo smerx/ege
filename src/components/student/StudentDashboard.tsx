@@ -20,6 +20,7 @@ import {
   Send,
   Award
 } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 
 interface Assignment {
   id: string;
@@ -316,7 +317,7 @@ export function StudentDashboard() {
                                 <div>
                                   <p className="text-sm text-gray-600 mb-2">Условие:</p>
                                   <div className="bg-gray-50 rounded-lg p-4">
-                                    <p className="text-sm">{assignment.description}</p>
+                                    <ReactMarkdown className="prose prose-sm">{assignment.description}</ReactMarkdown>
                                   </div>
                                   {assignment.image_urls && assignment.image_urls.length > 0 && (
                                     <div className="grid grid-cols-2 gap-2 mt-3">
