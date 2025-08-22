@@ -317,7 +317,9 @@ export function StudentDashboard() {
                                 <div>
                                   <p className="text-sm text-gray-600 mb-2">Условие:</p>
                                   <div className="bg-gray-50 rounded-lg p-4">
-                                    <ReactMarkdown className="prose prose-sm">{assignment.description}</ReactMarkdown>
+                                    <div className="prose prose-sm">
+                                      <ReactMarkdown>{assignment.description}</ReactMarkdown>
+                                    </div>
                                   </div>
                                   {assignment.image_urls && assignment.image_urls.length > 0 && (
                                     <div className="grid grid-cols-2 gap-2 mt-3">

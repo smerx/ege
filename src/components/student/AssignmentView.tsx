@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -212,7 +213,9 @@ export function AssignmentView({ assignment, studentAssignment, onBack }: Assign
           <CardContent>
             <div className="space-y-6">
               <div>
-                <p className="text-base leading-relaxed">{currentQuestion.question}</p>
+                <ReactMarkdown className="prose prose-sm max-w-none">
+                  {currentQuestion.question}
+                </ReactMarkdown>
               </div>
 
               <RadioGroup
