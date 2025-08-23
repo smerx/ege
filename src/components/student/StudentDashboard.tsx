@@ -15,6 +15,15 @@ import {
   DialogTrigger,
 } from "../ui/dialog";
 import { Textarea } from "../ui/textarea";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
 import { toast } from "sonner";
 import {
   BookOpen,
@@ -29,6 +38,8 @@ import {
   ChevronDown,
   ChevronRight,
   Lock,
+  Filter,
+  Search,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { ImageWithFallback } from "../figma/ImageWithFallback";
@@ -83,6 +94,10 @@ export function StudentDashboard() {
   const [expandedTheoryBlocks, setExpandedTheoryBlocks] = useState<Set<string>>(
     new Set()
   );
+
+  // Filter states
+  const [assignmentFilter, setAssignmentFilter] = useState<"all" | "homework" | "classwork">("all");
+  const [assignmentSearch, setAssignmentSearch] = useState("");
 
   useEffect(() => {
     loadData();
@@ -221,6 +236,30 @@ export function StudentDashboard() {
     (s) => s.status === "pending"
   ).length;
 
+  // Filter assignments based on type and search
+  const filteredAssignments = assignments.filter((assignment) => {
+    // Filter by type (homework/classwork)
+    const typeMatch = (() => {
+      if (assignmentFilter === "all") return true;
+      
+      const title = assignment.title.toLowerCase();
+      if (assignmentFilter === "homework") {
+        return title.includes("домашняя работа") || title.includes("домашнее задание");
+      }
+      if (assignmentFilter === "classwork") {
+        return title.includes("классная работа") || title.includes("классное задание");
+      }
+      return true;
+    })();
+
+    // Filter by search text
+    const searchMatch = assignmentSearch.trim() === "" || 
+      assignment.title.toLowerCase().includes(assignmentSearch.toLowerCase()) ||
+      assignment.description.toLowerCase().includes(assignmentSearch.toLowerCase());
+
+    return typeMatch && searchMatch;
+  });
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -325,12 +364,40 @@ export function StudentDashboard() {
 
           {/* Задания */}
           <TabsContent value="assignments" className="space-y-6">
-            <h2 className="text-xl font-semibold text-gray-900">
-              Домашние задания
-            </h2>
+            <div className="flex items-center justify-end gap-4">
+              {/* Фильтры */}
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <Filter className="w-4 h-4 text-gray-500" />
+                  <Select value={assignmentFilter} onValueChange={(value: "all" | "homework" | "classwork") => setAssignmentFilter(value)}>
+                    <SelectTrigger className="w-48">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Все задания</SelectItem>
+                      <SelectItem value="homework">Домашняя работа</SelectItem>
+                      <SelectItem value="classwork">Классная работа</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Search className="w-4 h-4 text-gray-500" />
+                  <Input
+                    placeholder="Поиск по названию..."
+                    value={assignmentSearch}
+                    onChange={(e) => setAssignmentSearch(e.target.value)}
+                    className="w-48"
+                  />
+                </div>
+              </div>
+
+              {/* Здесь может быть кнопка если понадобится */}
+              <div></div>
+            </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {assignments.map((assignment) => {
+              {filteredAssignments.map((assignment) => {
                 const submission = getSubmissionForAssignment(assignment.id);
                 const hasAccess = hasAccessToAssignment(assignment);
 
@@ -578,6 +645,17 @@ export function StudentDashboard() {
                 );
               })}
             </div>
+
+            {/* Сообщение если нет заданий после фильтрации */}
+            {filteredAssignments.length === 0 && (
+              <div className="text-center py-8">
+                <p className="text-gray-500">
+                  {assignmentFilter === "all" && assignmentSearch === ""
+                    ? "Заданий пока нет"
+                    : "Задания не найдены. Попробуйте изменить фильтры."}
+                </p>
+              </div>
+            )}
           </TabsContent>
 
           {/* Теория */}

@@ -63,6 +63,8 @@ import {
   X,
   Key,
   Archive,
+  Filter,
+  Search,
 } from "lucide-react";
 
 interface Assignment {
@@ -184,6 +186,13 @@ export function AdminDashboard() {
   const [previewIndex, setPreviewIndex] = useState(0);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [previewTitle, setPreviewTitle] = useState("");
+
+  // Filter states
+  const [assignmentFilter, setAssignmentFilter] = useState<"all" | "homework" | "classwork">("all");
+  const [assignmentSearch, setAssignmentSearch] = useState("");
+  const [submissionSort, setSubmissionSort] = useState<"newest" | "oldest">("newest");
+  const [submissionStudentFilter, setSubmissionStudentFilter] = useState("");
+  const [submissionAssignmentFilter, setSubmissionAssignmentFilter] = useState("");
 
   useEffect(() => {
     loadData();
@@ -524,6 +533,55 @@ export function AdminDashboard() {
   };
 
   const pendingSubmissions = submissions.filter((s) => s.status === "pending");
+
+  // Filter assignments based on type and search
+  const filteredAssignments = assignments.filter((assignment) => {
+    // Filter by type (homework/classwork)
+    const typeMatch = (() => {
+      if (assignmentFilter === "all") return true;
+      
+      const title = assignment.title.toLowerCase();
+      if (assignmentFilter === "homework") {
+        return title.includes("домашняя работа") || title.includes("домашнее задание");
+      }
+      if (assignmentFilter === "classwork") {
+        return title.includes("классная работа") || title.includes("классное задание");
+      }
+      return true;
+    })();
+
+    // Filter by search text
+    const searchMatch = assignmentSearch.trim() === "" || 
+      assignment.title.toLowerCase().includes(assignmentSearch.toLowerCase()) ||
+      assignment.description.toLowerCase().includes(assignmentSearch.toLowerCase());
+
+    return typeMatch && searchMatch;
+  });
+
+  // Filter submissions for grading section
+  const filteredSubmissions = submissions.filter((submission) => {
+    const targetStatus = showArchive ? "graded" : "pending";
+    if (submission.status !== targetStatus) return false;
+
+    // Student filter
+    const student = students.find(s => s.id === submission.student_id);
+    const studentMatch = submissionStudentFilter === "" || 
+      (student && 
+        `${student.first_name} ${student.last_name}`.toLowerCase()
+          .includes(submissionStudentFilter.toLowerCase()));
+
+    // Assignment filter
+    const assignment = assignments.find(a => a.id === submission.assignment_id);
+    const assignmentMatch = submissionAssignmentFilter === "" ||
+      (assignment && assignment.title.toLowerCase()
+        .includes(submissionAssignmentFilter.toLowerCase()));
+
+    return studentMatch && assignmentMatch;
+  }).sort((a, b) => {
+    const dateA = new Date(a.submitted_at).getTime();
+    const dateB = new Date(b.submitted_at).getTime();
+    return submissionSort === "newest" ? dateB - dateA : dateA - dateB;
+  });
 
   // Функции для редактирования
   const handleEditAssignment = (assignment: Assignment) => {
@@ -882,10 +940,35 @@ export function AdminDashboard() {
 
           {/* Задания */}
           <TabsContent value="assignments" className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold text-gray-900">
-                Управление заданиями
-              </h2>
+            <div className="flex items-center justify-between gap-4">
+              {/* Фильтры */}
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <Filter className="w-4 h-4 text-gray-500" />
+                  <Select value={assignmentFilter} onValueChange={(value: "all" | "homework" | "classwork") => setAssignmentFilter(value)}>
+                    <SelectTrigger className="w-48">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Все задания</SelectItem>
+                      <SelectItem value="homework">Домашняя работа</SelectItem>
+                      <SelectItem value="classwork">Классная работа</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Search className="w-4 h-4 text-gray-500" />
+                  <Input
+                    placeholder="Поиск по названию..."
+                    value={assignmentSearch}
+                    onChange={(e) => setAssignmentSearch(e.target.value)}
+                    className="w-48"
+                  />
+                </div>
+              </div>
+
+              {/* Кнопка создания */}
               <Dialog
                 open={isCreateAssignmentOpen}
                 onOpenChange={setIsCreateAssignmentOpen}
@@ -896,7 +979,7 @@ export function AdminDashboard() {
                     Создать задание
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+                  <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>Создать новое задание</DialogTitle>
                     <DialogDescription>
@@ -1016,7 +1099,7 @@ export function AdminDashboard() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {assignments.map((assignment) => (
+              {filteredAssignments.map((assignment) => (
                 <Card key={assignment.id}>
                   <CardHeader>
                     <div className="flex justify-between items-start">
@@ -1099,14 +1182,22 @@ export function AdminDashboard() {
                 </Card>
               ))}
             </div>
+
+            {/* Сообщение если нет заданий после фильтрации */}
+            {filteredAssignments.length === 0 && (
+              <div className="text-center py-8">
+                <p className="text-gray-500">
+                  {assignmentFilter === "all" && assignmentSearch === ""
+                    ? "Заданий пока нет"
+                    : "Задания не найдены. Попробуйте изменить фильтры."}
+                </p>
+              </div>
+            )}
           </TabsContent>
 
           {/* Теория */}
           <TabsContent value="theory" className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold text-gray-900">
-                Теоретические материалы
-              </h2>
+            <div className="flex justify-end">
               <Dialog
                 open={isCreateTheoryOpen}
                 onOpenChange={setIsCreateTheoryOpen}
@@ -1299,10 +1390,7 @@ export function AdminDashboard() {
 
           {/* Ученики */}
           <TabsContent value="students" className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold text-gray-900">
-                Управление учениками
-              </h2>
+            <div className="flex justify-end">
               <Dialog
                 open={isAddStudentOpen}
                 onOpenChange={setIsAddStudentOpen}
@@ -1520,12 +1608,41 @@ export function AdminDashboard() {
 
           {/* Проверка работ */}
           <TabsContent value="submissions" className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold text-gray-900">
-                {showArchive
-                  ? "Архив проверенных работ"
-                  : "Проверка работ учеников"}
-              </h2>
+            <div className="flex items-center justify-between gap-4">
+              {/* Фильтры */}
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <Search className="w-4 h-4 text-gray-500" />
+                  <Input
+                    placeholder="Поиск по ученику..."
+                    value={submissionStudentFilter}
+                    onChange={(e) => setSubmissionStudentFilter(e.target.value)}
+                    className="w-48"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Filter className="w-4 h-4 text-gray-500" />
+                  <Input
+                    placeholder="Поиск по заданию..."
+                    value={submissionAssignmentFilter}
+                    onChange={(e) => setSubmissionAssignmentFilter(e.target.value)}
+                    className="w-48"
+                  />
+                </div>
+
+                <Select value={submissionSort} onValueChange={(value: "newest" | "oldest") => setSubmissionSort(value)}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="newest">От новых к старым</SelectItem>
+                    <SelectItem value="oldest">От старых к новым</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Кнопка архива */}
               <Button
                 variant="outline"
                 onClick={() => setShowArchive(!showArchive)}
@@ -1536,13 +1653,7 @@ export function AdminDashboard() {
             </div>
 
             <div className="space-y-4">
-              {submissions
-                .filter((submission) =>
-                  showArchive
-                    ? submission.status === "graded"
-                    : submission.status === "pending"
-                )
-                .map((submission) => {
+              {filteredSubmissions.map((submission) => {
                   const student = students.find(
                     (s) => s.id === submission.student_id
                   );
@@ -1692,16 +1803,14 @@ export function AdminDashboard() {
             </div>
 
             {/* Показать сообщение если нет работ */}
-            {submissions.filter((submission) =>
-              showArchive
-                ? submission.status === "graded"
-                : submission.status === "pending"
-            ).length === 0 && (
+            {filteredSubmissions.length === 0 && (
               <div className="text-center py-8">
                 <p className="text-gray-500">
-                  {showArchive
-                    ? "Нет проверенных работ"
-                    : "Нет работ на проверке"}
+                  {submissionStudentFilter === "" && submissionAssignmentFilter === ""
+                    ? (showArchive
+                        ? "Нет проверенных работ"
+                        : "Нет работ на проверке")
+                    : "Работы не найдены. Попробуйте изменить фильтры."}
                 </p>
               </div>
             )}
