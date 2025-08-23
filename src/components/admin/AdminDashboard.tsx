@@ -62,6 +62,7 @@ import {
   GraduationCap,
   X,
   Key,
+  Archive,
 } from "lucide-react";
 
 interface Assignment {
@@ -133,6 +134,11 @@ export function AdminDashboard() {
     null
   );
   const [editingTheory, setEditingTheory] = useState<TheoryBlock | null>(null);
+
+  // Archive states
+  const [showArchive, setShowArchive] = useState(false);
+  const [editingSubmission, setEditingSubmission] = useState<Submission | null>(null);
+  const [isEditSubmissionOpen, setIsEditSubmissionOpen] = useState(false);
 
   // Form states
   const [newAssignment, setNewAssignment] = useState({
@@ -387,6 +393,30 @@ export function AdminDashboard() {
     }
   };
 
+  const handleEditSubmissionGrade = async () => {
+    if (!editingSubmission) return;
+
+    try {
+      const { error } = await supabase
+        .from("submissions")
+        .update({
+          score: editingSubmission.score,
+          feedback: editingSubmission.feedback,
+        })
+        .eq("id", editingSubmission.id);
+
+      if (error) throw error;
+
+      toast.success("Оценка обновлена");
+      setIsEditSubmissionOpen(false);
+      setEditingSubmission(null);
+      loadData();
+    } catch (error) {
+      console.error("Error updating submission:", error);
+      toast.error("Ошибка обновления оценки");
+    }
+  };
+
   const confirmDelete = async () => {
     if (!deleteConfirm) return;
 
@@ -636,7 +666,7 @@ export function AdminDashboard() {
             <TabsTrigger value="assignments">Задания</TabsTrigger>
             <TabsTrigger value="theory">Теория</TabsTrigger>
             <TabsTrigger value="students">Ученики</TabsTrigger>
-            <TabsTrigger value="submissions">Проверка работ</TabsTrigger>
+            <TabsTrigger value="submissions">Проверка</TabsTrigger>
           </TabsList>
 
           {/* Задания */}
@@ -998,7 +1028,7 @@ export function AdminDashboard() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-gray-600 text-sm mb-3 line-clamp-3">
-                      <ContentFormatter 
+                      <ContentFormatter
                         content={theory.content}
                         className="text-sm"
                       />
@@ -1262,135 +1292,173 @@ export function AdminDashboard() {
 
           {/* Проверка работ */}
           <TabsContent value="submissions" className="space-y-6">
-            <h2 className="text-xl font-semibold text-gray-900">
-              Проверка работ учеников
-            </h2>
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-semibold text-gray-900">
+                {showArchive ? "Архив проверенных работ" : "Проверка работ учеников"}
+              </h2>
+              <Button
+                variant="outline"
+                onClick={() => setShowArchive(!showArchive)}
+              >
+                <Archive className="w-4 h-4 mr-2" />
+                {showArchive ? "К проверке" : "Архив"}
+              </Button>
+            </div>
 
             <div className="space-y-4">
-              {submissions.map((submission) => {
-                const student = students.find(
-                  (s) => s.id === submission.student_id
-                );
-                const assignment = assignments.find(
-                  (a) => a.id === submission.assignment_id
-                );
+              {submissions
+                .filter((submission) => 
+                  showArchive ? submission.status === "graded" : submission.status === "pending"
+                )
+                .map((submission) => {
+                  const student = students.find(
+                    (s) => s.id === submission.student_id
+                  );
+                  const assignment = assignments.find(
+                    (a) => a.id === submission.assignment_id
+                  );
 
-                return (
-                  <Card key={submission.id}>
-                    <CardHeader>
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <CardTitle className="text-lg">
-                            {assignment?.title} - {student?.last_name}{" "}
-                            {student?.first_name}
-                          </CardTitle>
-                          <p className="text-sm text-gray-600">
-                            Сдано:{" "}
-                            {new Date(
-                              submission.submitted_at
-                            ).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <Badge
-                          variant={
-                            submission.status === "pending"
-                              ? "outline"
-                              : "default"
-                          }
-                        >
-                          {submission.status === "pending"
-                            ? "На проверке"
-                            : "Проверено"}
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        <div>
-                          <Label>Ответ ученика:</Label>
-                          <div className="bg-gray-50 rounded-lg p-4 mt-2">
-                            <ContentFormatter 
-                              content={submission.content}
-                              className="text-sm font-mono"
-                            />
-                          </div>
-                        </div>
-
-                        {submission.status === "pending" && (
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-3">
-                              <Label htmlFor={`score-${submission.id}`}>
-                                Оценка (из {assignment?.max_score})
-                              </Label>
-                              <Input
-                                id={`score-${submission.id}`}
-                                type="number"
-                                max={assignment?.max_score}
-                                placeholder="0"
-                              />
-                            </div>
-                            <div className="space-y-3">
-                              <Label htmlFor={`feedback-${submission.id}`}>
-                                Комментарий
-                              </Label>
-                              <Textarea
-                                id={`feedback-${submission.id}`}
-                                placeholder="Комментарий к работе..."
-                                rows={2}
-                              />
-                            </div>
-                          </div>
-                        )}
-
-                        {submission.status === "graded" && (
-                          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                            <p>
-                              <strong>Оценка:</strong> {submission.score}/
-                              {assignment?.max_score}
+                  return (
+                    <Card key={submission.id}>
+                      <CardHeader>
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <CardTitle className="text-lg">
+                              {assignment?.title} - {student?.last_name}{" "}
+                              {student?.first_name}
+                            </CardTitle>
+                            <p className="text-sm text-gray-600">
+                              Сдано:{" "}
+                              {new Date(
+                                submission.submitted_at
+                              ).toLocaleDateString()}
                             </p>
-                            {submission.feedback && (
-                              <p>
-                                <strong>Комментарий:</strong>{" "}
-                                {submission.feedback}
-                              </p>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Badge
+                              variant={
+                                submission.status === "pending"
+                                  ? "outline"
+                                  : "default"
+                              }
+                            >
+                              {submission.status === "pending"
+                                ? "На проверке"
+                                : "Проверено"}
+                            </Badge>
+                            {showArchive && submission.status === "graded" && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setEditingSubmission(submission);
+                                  setIsEditSubmissionOpen(true);
+                                }}
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
                             )}
                           </div>
-                        )}
-
-                        {submission.status === "pending" && (
-                          <div className="flex justify-end">
-                            <Button
-                              onClick={() => {
-                                const scoreInput = document.getElementById(
-                                  `score-${submission.id}`
-                                ) as HTMLInputElement;
-                                const feedbackInput = document.getElementById(
-                                  `feedback-${submission.id}`
-                                ) as HTMLTextAreaElement;
-
-                                const score = parseInt(scoreInput.value);
-                                const feedback = feedbackInput.value;
-
-                                if (!isNaN(score)) {
-                                  handleGradeSubmission(
-                                    submission.id,
-                                    score,
-                                    feedback
-                                  );
-                                }
-                              }}
-                            >
-                              <Save className="w-4 h-4 mr-2" />
-                              Сохранить оценку
-                            </Button>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4">
+                          <div>
+                            <Label>Ответ ученика:</Label>
+                            <div className="bg-gray-50 rounded-lg p-4 mt-2">
+                              <ContentFormatter
+                                content={submission.content}
+                                className="text-sm font-mono"
+                              />
+                            </div>
                           </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+
+                          {submission.status === "pending" && !showArchive && (
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-3">
+                                <Label htmlFor={`score-${submission.id}`}>
+                                  Оценка (из {assignment?.max_score})
+                                </Label>
+                                <Input
+                                  id={`score-${submission.id}`}
+                                  type="number"
+                                  max={assignment?.max_score}
+                                  placeholder="0"
+                                />
+                              </div>
+                              <div className="space-y-3">
+                                <Label htmlFor={`feedback-${submission.id}`}>
+                                  Комментарий
+                                </Label>
+                                <Textarea
+                                  id={`feedback-${submission.id}`}
+                                  placeholder="Комментарий к работе..."
+                                  rows={2}
+                                />
+                              </div>
+                            </div>
+                          )}
+
+                          {submission.status === "graded" && (
+                            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                              <p>
+                                <strong>Оценка:</strong> {submission.score}/
+                                {assignment?.max_score}
+                              </p>
+                              {submission.feedback && (
+                                <p>
+                                  <strong>Комментарий:</strong>{" "}
+                                  {submission.feedback}
+                                </p>
+                              )}
+                            </div>
+                          )}
+
+                          {submission.status === "pending" && !showArchive && (
+                            <div className="flex justify-end">
+                              <Button
+                                onClick={() => {
+                                  const scoreInput = document.getElementById(
+                                    `score-${submission.id}`
+                                  ) as HTMLInputElement;
+                                  const feedbackInput = document.getElementById(
+                                    `feedback-${submission.id}`
+                                  ) as HTMLTextAreaElement;
+
+                                  const score = parseInt(scoreInput.value);
+                                  const feedback = feedbackInput.value;
+
+                                  if (!isNaN(score)) {
+                                    handleGradeSubmission(
+                                      submission.id,
+                                      score,
+                                      feedback
+                                    );
+                                  }
+                                }}
+                              >
+                                <Save className="w-4 h-4 mr-2" />
+                                Сохранить оценку
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
             </div>
+
+            {/* Показать сообщение если нет работ */}
+            {submissions.filter((submission) => 
+              showArchive ? submission.status === "graded" : submission.status === "pending"
+            ).length === 0 && (
+              <div className="text-center py-8">
+                <p className="text-gray-500">
+                  {showArchive ? "Нет проверенных работ" : "Нет работ на проверке"}
+                </p>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </main>
@@ -1603,6 +1671,79 @@ export function AdminDashboard() {
         }}
         onSave={handleSaveTheory}
       />
+
+      {/* Edit Submission Dialog */}
+      <Dialog open={isEditSubmissionOpen} onOpenChange={setIsEditSubmissionOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Редактировать оценку</DialogTitle>
+            <DialogDescription>
+              Измените оценку и комментарий для работы
+            </DialogDescription>
+          </DialogHeader>
+          {editingSubmission && (
+            <div className="space-y-6">
+              <div className="space-y-3">
+                <Label>Ученик:</Label>
+                <p className="text-sm text-gray-600">
+                  {students.find(s => s.id === editingSubmission.student_id)?.last_name}{" "}
+                  {students.find(s => s.id === editingSubmission.student_id)?.first_name}
+                </p>
+              </div>
+              <div className="space-y-3">
+                <Label>Задание:</Label>
+                <p className="text-sm text-gray-600">
+                  {assignments.find(a => a.id === editingSubmission.assignment_id)?.title}
+                </p>
+              </div>
+              <div className="space-y-3">
+                <Label htmlFor="editScore">
+                  Оценка (из {assignments.find(a => a.id === editingSubmission.assignment_id)?.max_score})
+                </Label>
+                <Input
+                  id="editScore"
+                  type="number"
+                  value={editingSubmission.score || 0}
+                  onChange={(e) =>
+                    setEditingSubmission({
+                      ...editingSubmission,
+                      score: parseInt(e.target.value) || 0,
+                    })
+                  }
+                  max={assignments.find(a => a.id === editingSubmission.assignment_id)?.max_score}
+                />
+              </div>
+              <div className="space-y-3">
+                <Label htmlFor="editFeedback">Комментарий</Label>
+                <Textarea
+                  id="editFeedback"
+                  value={editingSubmission.feedback || ""}
+                  onChange={(e) =>
+                    setEditingSubmission({
+                      ...editingSubmission,
+                      feedback: e.target.value,
+                    })
+                  }
+                  placeholder="Комментарий к работе..."
+                  rows={3}
+                />
+              </div>
+              <div className="flex justify-end space-x-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsEditSubmissionOpen(false)}
+                >
+                  Отмена
+                </Button>
+                <Button onClick={handleEditSubmissionGrade}>
+                  <Save className="w-4 h-4 mr-2" />
+                  Сохранить
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
