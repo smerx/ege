@@ -188,11 +188,16 @@ export function AdminDashboard() {
   const [previewTitle, setPreviewTitle] = useState("");
 
   // Filter states
-  const [assignmentFilter, setAssignmentFilter] = useState<"all" | "homework" | "classwork">("all");
+  const [assignmentFilter, setAssignmentFilter] = useState<
+    "all" | "homework" | "classwork"
+  >("all");
   const [assignmentSearch, setAssignmentSearch] = useState("");
-  const [submissionSort, setSubmissionSort] = useState<"newest" | "oldest">("newest");
+  const [submissionSort, setSubmissionSort] = useState<"newest" | "oldest">(
+    "newest"
+  );
   const [submissionStudentFilter, setSubmissionStudentFilter] = useState("");
-  const [submissionAssignmentFilter, setSubmissionAssignmentFilter] = useState("");
+  const [submissionAssignmentFilter, setSubmissionAssignmentFilter] =
+    useState("");
 
   useEffect(() => {
     loadData();
@@ -539,49 +544,67 @@ export function AdminDashboard() {
     // Filter by type (homework/classwork)
     const typeMatch = (() => {
       if (assignmentFilter === "all") return true;
-      
+
       const title = assignment.title.toLowerCase();
       if (assignmentFilter === "homework") {
-        return title.includes("домашняя работа") || title.includes("домашнее задание");
+        return (
+          title.includes("домашняя работа") ||
+          title.includes("домашнее задание")
+        );
       }
       if (assignmentFilter === "classwork") {
-        return title.includes("классная работа") || title.includes("классное задание");
+        return (
+          title.includes("классная работа") ||
+          title.includes("классное задание")
+        );
       }
       return true;
     })();
 
     // Filter by search text
-    const searchMatch = assignmentSearch.trim() === "" || 
+    const searchMatch =
+      assignmentSearch.trim() === "" ||
       assignment.title.toLowerCase().includes(assignmentSearch.toLowerCase()) ||
-      assignment.description.toLowerCase().includes(assignmentSearch.toLowerCase());
+      assignment.description
+        .toLowerCase()
+        .includes(assignmentSearch.toLowerCase());
 
     return typeMatch && searchMatch;
   });
 
   // Filter submissions for grading section
-  const filteredSubmissions = submissions.filter((submission) => {
-    const targetStatus = showArchive ? "graded" : "pending";
-    if (submission.status !== targetStatus) return false;
+  const filteredSubmissions = submissions
+    .filter((submission) => {
+      const targetStatus = showArchive ? "graded" : "pending";
+      if (submission.status !== targetStatus) return false;
 
-    // Student filter
-    const student = students.find(s => s.id === submission.student_id);
-    const studentMatch = submissionStudentFilter === "" || 
-      (student && 
-        `${student.first_name} ${student.last_name}`.toLowerCase()
-          .includes(submissionStudentFilter.toLowerCase()));
+      // Student filter
+      const student = students.find((s) => s.id === submission.student_id);
+      const studentMatch =
+        submissionStudentFilter === "" ||
+        (student &&
+          `${student.first_name} ${student.last_name}`
+            .toLowerCase()
+            .includes(submissionStudentFilter.toLowerCase()));
 
-    // Assignment filter
-    const assignment = assignments.find(a => a.id === submission.assignment_id);
-    const assignmentMatch = submissionAssignmentFilter === "" ||
-      (assignment && assignment.title.toLowerCase()
-        .includes(submissionAssignmentFilter.toLowerCase()));
+      // Assignment filter
+      const assignment = assignments.find(
+        (a) => a.id === submission.assignment_id
+      );
+      const assignmentMatch =
+        submissionAssignmentFilter === "" ||
+        (assignment &&
+          assignment.title
+            .toLowerCase()
+            .includes(submissionAssignmentFilter.toLowerCase()));
 
-    return studentMatch && assignmentMatch;
-  }).sort((a, b) => {
-    const dateA = new Date(a.submitted_at).getTime();
-    const dateB = new Date(b.submitted_at).getTime();
-    return submissionSort === "newest" ? dateB - dateA : dateA - dateB;
-  });
+      return studentMatch && assignmentMatch;
+    })
+    .sort((a, b) => {
+      const dateA = new Date(a.submitted_at).getTime();
+      const dateB = new Date(b.submitted_at).getTime();
+      return submissionSort === "newest" ? dateB - dateA : dateA - dateB;
+    });
 
   // Функции для редактирования
   const handleEditAssignment = (assignment: Assignment) => {
@@ -945,7 +968,12 @@ export function AdminDashboard() {
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2">
                   <Filter className="w-4 h-4 text-gray-500" />
-                  <Select value={assignmentFilter} onValueChange={(value: "all" | "homework" | "classwork") => setAssignmentFilter(value)}>
+                  <Select
+                    value={assignmentFilter}
+                    onValueChange={(value: "all" | "homework" | "classwork") =>
+                      setAssignmentFilter(value)
+                    }
+                  >
                     <SelectTrigger className="w-48">
                       <SelectValue />
                     </SelectTrigger>
@@ -979,7 +1007,7 @@ export function AdminDashboard() {
                     Создать задание
                   </Button>
                 </DialogTrigger>
-                  <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+                <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>Создать новое задание</DialogTitle>
                     <DialogDescription>
@@ -1626,12 +1654,19 @@ export function AdminDashboard() {
                   <Input
                     placeholder="Поиск по заданию..."
                     value={submissionAssignmentFilter}
-                    onChange={(e) => setSubmissionAssignmentFilter(e.target.value)}
+                    onChange={(e) =>
+                      setSubmissionAssignmentFilter(e.target.value)
+                    }
                     className="w-48"
                   />
                 </div>
 
-                <Select value={submissionSort} onValueChange={(value: "newest" | "oldest") => setSubmissionSort(value)}>
+                <Select
+                  value={submissionSort}
+                  onValueChange={(value: "newest" | "oldest") =>
+                    setSubmissionSort(value)
+                  }
+                >
                   <SelectTrigger className="w-48">
                     <SelectValue />
                   </SelectTrigger>
@@ -1654,162 +1689,163 @@ export function AdminDashboard() {
 
             <div className="space-y-4">
               {filteredSubmissions.map((submission) => {
-                  const student = students.find(
-                    (s) => s.id === submission.student_id
-                  );
-                  const assignment = assignments.find(
-                    (a) => a.id === submission.assignment_id
-                  );
+                const student = students.find(
+                  (s) => s.id === submission.student_id
+                );
+                const assignment = assignments.find(
+                  (a) => a.id === submission.assignment_id
+                );
 
-                  return (
-                    <Card key={submission.id}>
-                      <CardHeader>
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <CardTitle className="text-lg">
-                              {assignment?.title} - {student?.last_name}{" "}
-                              {student?.first_name}
-                            </CardTitle>
-                            <p className="text-sm text-gray-600">
-                              Сдано:{" "}
-                              {new Date(
-                                submission.submitted_at
-                              ).toLocaleDateString()}
-                            </p>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <Badge
-                              variant={
-                                submission.status === "pending"
-                                  ? "outline"
-                                  : "default"
-                              }
+                return (
+                  <Card key={submission.id}>
+                    <CardHeader>
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <CardTitle className="text-lg">
+                            {assignment?.title} - {student?.last_name}{" "}
+                            {student?.first_name}
+                          </CardTitle>
+                          <p className="text-sm text-gray-600">
+                            Сдано:{" "}
+                            {new Date(
+                              submission.submitted_at
+                            ).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Badge
+                            variant={
+                              submission.status === "pending"
+                                ? "outline"
+                                : "default"
+                            }
+                          >
+                            {submission.status === "pending"
+                              ? "На проверке"
+                              : "Проверено"}
+                          </Badge>
+                          {showArchive && submission.status === "graded" && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setEditingSubmission(submission);
+                                setIsEditSubmissionOpen(true);
+                              }}
                             >
-                              {submission.status === "pending"
-                                ? "На проверке"
-                                : "Проверено"}
-                            </Badge>
-                            {showArchive && submission.status === "graded" && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => {
-                                  setEditingSubmission(submission);
-                                  setIsEditSubmissionOpen(true);
-                                }}
-                              >
-                                <Edit className="w-4 h-4" />
-                              </Button>
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div>
+                          <Label>Текст задания:</Label>
+                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-2">
+                            <ContentFormatter
+                              content={assignment?.description || ""}
+                              className="text-sm"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <Label>Ответ ученика:</Label>
+                          <div className="bg-gray-50 rounded-lg p-4 mt-2">
+                            <ContentFormatter
+                              content={submission.content}
+                              className="text-sm font-mono"
+                            />
+                          </div>
+                        </div>
+
+                        {submission.status === "pending" && !showArchive && (
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-3">
+                              <Label htmlFor={`score-${submission.id}`}>
+                                Оценка (из {assignment?.max_score})
+                              </Label>
+                              <Input
+                                id={`score-${submission.id}`}
+                                type="number"
+                                max={assignment?.max_score}
+                                placeholder="0"
+                              />
+                            </div>
+                            <div className="space-y-3">
+                              <Label htmlFor={`feedback-${submission.id}`}>
+                                Комментарий
+                              </Label>
+                              <Textarea
+                                id={`feedback-${submission.id}`}
+                                placeholder="Комментарий к работе..."
+                                rows={2}
+                              />
+                            </div>
+                          </div>
+                        )}
+
+                        {submission.status === "graded" && (
+                          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                            <p>
+                              <strong>Оценка:</strong> {submission.score}/
+                              {assignment?.max_score}
+                            </p>
+                            {submission.feedback && (
+                              <p>
+                                <strong>Комментарий:</strong>{" "}
+                                {submission.feedback}
+                              </p>
                             )}
                           </div>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-4">
-                          <div>
-                            <Label>Текст задания:</Label>
-                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-2">
-                              <ContentFormatter
-                                content={assignment?.description || ""}
-                                className="text-sm"
-                              />
-                            </div>
+                        )}
+
+                        {submission.status === "pending" && !showArchive && (
+                          <div className="flex justify-end">
+                            <Button
+                              onClick={() => {
+                                const scoreInput = document.getElementById(
+                                  `score-${submission.id}`
+                                ) as HTMLInputElement;
+                                const feedbackInput = document.getElementById(
+                                  `feedback-${submission.id}`
+                                ) as HTMLTextAreaElement;
+
+                                const score = parseInt(scoreInput.value);
+                                const feedback = feedbackInput.value;
+
+                                if (!isNaN(score)) {
+                                  handleGradeSubmission(
+                                    submission.id,
+                                    score,
+                                    feedback
+                                  );
+                                }
+                              }}
+                            >
+                              <Save className="w-4 h-4 mr-2" />
+                              Сохранить оценку
+                            </Button>
                           </div>
-
-                          <div>
-                            <Label>Ответ ученика:</Label>
-                            <div className="bg-gray-50 rounded-lg p-4 mt-2">
-                              <ContentFormatter
-                                content={submission.content}
-                                className="text-sm font-mono"
-                              />
-                            </div>
-                          </div>
-
-                          {submission.status === "pending" && !showArchive && (
-                            <div className="grid grid-cols-2 gap-4">
-                              <div className="space-y-3">
-                                <Label htmlFor={`score-${submission.id}`}>
-                                  Оценка (из {assignment?.max_score})
-                                </Label>
-                                <Input
-                                  id={`score-${submission.id}`}
-                                  type="number"
-                                  max={assignment?.max_score}
-                                  placeholder="0"
-                                />
-                              </div>
-                              <div className="space-y-3">
-                                <Label htmlFor={`feedback-${submission.id}`}>
-                                  Комментарий
-                                </Label>
-                                <Textarea
-                                  id={`feedback-${submission.id}`}
-                                  placeholder="Комментарий к работе..."
-                                  rows={2}
-                                />
-                              </div>
-                            </div>
-                          )}
-
-                          {submission.status === "graded" && (
-                            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                              <p>
-                                <strong>Оценка:</strong> {submission.score}/
-                                {assignment?.max_score}
-                              </p>
-                              {submission.feedback && (
-                                <p>
-                                  <strong>Комментарий:</strong>{" "}
-                                  {submission.feedback}
-                                </p>
-                              )}
-                            </div>
-                          )}
-
-                          {submission.status === "pending" && !showArchive && (
-                            <div className="flex justify-end">
-                              <Button
-                                onClick={() => {
-                                  const scoreInput = document.getElementById(
-                                    `score-${submission.id}`
-                                  ) as HTMLInputElement;
-                                  const feedbackInput = document.getElementById(
-                                    `feedback-${submission.id}`
-                                  ) as HTMLTextAreaElement;
-
-                                  const score = parseInt(scoreInput.value);
-                                  const feedback = feedbackInput.value;
-
-                                  if (!isNaN(score)) {
-                                    handleGradeSubmission(
-                                      submission.id,
-                                      score,
-                                      feedback
-                                    );
-                                  }
-                                }}
-                              >
-                                <Save className="w-4 h-4 mr-2" />
-                                Сохранить оценку
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
 
             {/* Показать сообщение если нет работ */}
             {filteredSubmissions.length === 0 && (
               <div className="text-center py-8">
                 <p className="text-gray-500">
-                  {submissionStudentFilter === "" && submissionAssignmentFilter === ""
-                    ? (showArchive
-                        ? "Нет проверенных работ"
-                        : "Нет работ на проверке")
+                  {submissionStudentFilter === "" &&
+                  submissionAssignmentFilter === ""
+                    ? showArchive
+                      ? "Нет проверенных работ"
+                      : "Нет работ на проверке"
                     : "Работы не найдены. Попробуйте изменить фильтры."}
                 </p>
               </div>

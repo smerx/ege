@@ -96,7 +96,9 @@ export function StudentDashboard() {
   );
 
   // Filter states
-  const [assignmentFilter, setAssignmentFilter] = useState<"all" | "homework" | "classwork">("all");
+  const [assignmentFilter, setAssignmentFilter] = useState<
+    "all" | "homework" | "classwork"
+  >("all");
   const [assignmentSearch, setAssignmentSearch] = useState("");
 
   useEffect(() => {
@@ -241,21 +243,30 @@ export function StudentDashboard() {
     // Filter by type (homework/classwork)
     const typeMatch = (() => {
       if (assignmentFilter === "all") return true;
-      
+
       const title = assignment.title.toLowerCase();
       if (assignmentFilter === "homework") {
-        return title.includes("домашняя работа") || title.includes("домашнее задание");
+        return (
+          title.includes("домашняя работа") ||
+          title.includes("домашнее задание")
+        );
       }
       if (assignmentFilter === "classwork") {
-        return title.includes("классная работа") || title.includes("классное задание");
+        return (
+          title.includes("классная работа") ||
+          title.includes("классное задание")
+        );
       }
       return true;
     })();
 
     // Filter by search text
-    const searchMatch = assignmentSearch.trim() === "" || 
+    const searchMatch =
+      assignmentSearch.trim() === "" ||
       assignment.title.toLowerCase().includes(assignmentSearch.toLowerCase()) ||
-      assignment.description.toLowerCase().includes(assignmentSearch.toLowerCase());
+      assignment.description
+        .toLowerCase()
+        .includes(assignmentSearch.toLowerCase());
 
     return typeMatch && searchMatch;
   });
@@ -369,7 +380,12 @@ export function StudentDashboard() {
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2">
                   <Filter className="w-4 h-4 text-gray-500" />
-                  <Select value={assignmentFilter} onValueChange={(value: "all" | "homework" | "classwork") => setAssignmentFilter(value)}>
+                  <Select
+                    value={assignmentFilter}
+                    onValueChange={(value: "all" | "homework" | "classwork") =>
+                      setAssignmentFilter(value)
+                    }
+                  >
                     <SelectTrigger className="w-48">
                       <SelectValue />
                     </SelectTrigger>
