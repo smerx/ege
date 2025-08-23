@@ -137,7 +137,9 @@ export function AdminDashboard() {
 
   // Archive states
   const [showArchive, setShowArchive] = useState(false);
-  const [editingSubmission, setEditingSubmission] = useState<Submission | null>(null);
+  const [editingSubmission, setEditingSubmission] = useState<Submission | null>(
+    null
+  );
   const [isEditSubmissionOpen, setIsEditSubmissionOpen] = useState(false);
 
   // Form states
@@ -1027,12 +1029,11 @@ export function AdminDashboard() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-gray-600 text-sm mb-3 line-clamp-3">
-                      <ContentFormatter
-                        content={theory.content}
-                        className="text-sm"
-                      />
-                    </div>
+                    <p className="text-gray-600 text-sm mb-3">
+                      {theory.content.length > 50
+                        ? theory.content.substring(0, 50) + "..."
+                        : theory.content}
+                    </p>
                     {theory.image_urls.length > 0 && (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                         {theory.image_urls.slice(0, 2).map((img, index) => (
@@ -1294,7 +1295,9 @@ export function AdminDashboard() {
           <TabsContent value="submissions" className="space-y-6">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-semibold text-gray-900">
-                {showArchive ? "Архив проверенных работ" : "Проверка работ учеников"}
+                {showArchive
+                  ? "Архив проверенных работ"
+                  : "Проверка работ учеников"}
               </h2>
               <Button
                 variant="outline"
@@ -1307,8 +1310,10 @@ export function AdminDashboard() {
 
             <div className="space-y-4">
               {submissions
-                .filter((submission) => 
-                  showArchive ? submission.status === "graded" : submission.status === "pending"
+                .filter((submission) =>
+                  showArchive
+                    ? submission.status === "graded"
+                    : submission.status === "pending"
                 )
                 .map((submission) => {
                   const student = students.find(
@@ -1363,6 +1368,16 @@ export function AdminDashboard() {
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-4">
+                          <div>
+                            <Label>Текст задания:</Label>
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-2">
+                              <ContentFormatter
+                                content={assignment?.description || ""}
+                                className="text-sm"
+                              />
+                            </div>
+                          </div>
+
                           <div>
                             <Label>Ответ ученика:</Label>
                             <div className="bg-gray-50 rounded-lg p-4 mt-2">
@@ -1450,12 +1465,16 @@ export function AdminDashboard() {
             </div>
 
             {/* Показать сообщение если нет работ */}
-            {submissions.filter((submission) => 
-              showArchive ? submission.status === "graded" : submission.status === "pending"
+            {submissions.filter((submission) =>
+              showArchive
+                ? submission.status === "graded"
+                : submission.status === "pending"
             ).length === 0 && (
               <div className="text-center py-8">
                 <p className="text-gray-500">
-                  {showArchive ? "Нет проверенных работ" : "Нет работ на проверке"}
+                  {showArchive
+                    ? "Нет проверенных работ"
+                    : "Нет работ на проверке"}
                 </p>
               </div>
             )}
@@ -1673,7 +1692,10 @@ export function AdminDashboard() {
       />
 
       {/* Edit Submission Dialog */}
-      <Dialog open={isEditSubmissionOpen} onOpenChange={setIsEditSubmissionOpen}>
+      <Dialog
+        open={isEditSubmissionOpen}
+        onOpenChange={setIsEditSubmissionOpen}
+      >
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>Редактировать оценку</DialogTitle>
@@ -1686,19 +1708,35 @@ export function AdminDashboard() {
               <div className="space-y-3">
                 <Label>Ученик:</Label>
                 <p className="text-sm text-gray-600">
-                  {students.find(s => s.id === editingSubmission.student_id)?.last_name}{" "}
-                  {students.find(s => s.id === editingSubmission.student_id)?.first_name}
+                  {
+                    students.find((s) => s.id === editingSubmission.student_id)
+                      ?.last_name
+                  }{" "}
+                  {
+                    students.find((s) => s.id === editingSubmission.student_id)
+                      ?.first_name
+                  }
                 </p>
               </div>
               <div className="space-y-3">
                 <Label>Задание:</Label>
                 <p className="text-sm text-gray-600">
-                  {assignments.find(a => a.id === editingSubmission.assignment_id)?.title}
+                  {
+                    assignments.find(
+                      (a) => a.id === editingSubmission.assignment_id
+                    )?.title
+                  }
                 </p>
               </div>
               <div className="space-y-3">
                 <Label htmlFor="editScore">
-                  Оценка (из {assignments.find(a => a.id === editingSubmission.assignment_id)?.max_score})
+                  Оценка (из{" "}
+                  {
+                    assignments.find(
+                      (a) => a.id === editingSubmission.assignment_id
+                    )?.max_score
+                  }
+                  )
                 </Label>
                 <Input
                   id="editScore"
@@ -1710,7 +1748,11 @@ export function AdminDashboard() {
                       score: parseInt(e.target.value) || 0,
                     })
                   }
-                  max={assignments.find(a => a.id === editingSubmission.assignment_id)?.max_score}
+                  max={
+                    assignments.find(
+                      (a) => a.id === editingSubmission.assignment_id
+                    )?.max_score
+                  }
                 />
               </div>
               <div className="space-y-3">

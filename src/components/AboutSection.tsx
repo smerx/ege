@@ -8,27 +8,29 @@ export function AboutSection() {
     {
       icon: <Code className="w-6 h-6" />,
       title: "Практический опыт",
-      description: "Работаю программистом в ГК Форус — знаю, как применять теорию на практике"
+      description:
+        "Работаю программистом в ГК Форус — знаю, как применять теорию на практике",
     },
     {
       icon: <Trophy className="w-6 h-6" />,
       title: "Высокие результаты",
-      description: `Сам сдал ЕГЭ на ${ACHIEVEMENTS.egeScore} баллов, понимаю все тонкости экзамена`
+      description: `Сам сдал ЕГЭ на ${ACHIEVEMENTS.egeScore} баллов, понимаю все тонкости экзамена`,
     },
     {
       icon: <Users className="w-6 h-6" />,
       title: "Индивидуальный подход",
-      description: "Каждый ученик получает персональный план обучения и постоянную поддержку"
-    }
+      description:
+        "Личная образовательная платформа и персональный план подготовки для каждого ученика с учетом его особенностей и целей",
+    },
   ];
 
   const skills = [
     "Python, Java, C++",
-    "Алгоритмы и структуры данных", 
+    "Алгоритмы и структуры данных",
     "ОГЭ/ЕГЭ по информатике",
-    "Олимпиадное программирование",
+    "Android разработка",
     "Веб-разработка",
-    "Базы данных"
+    "Базы данных",
   ];
 
   return (
@@ -42,30 +44,43 @@ export function AboutSection() {
             Преподаватель информатики с практическим опытом
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Я — {CONTACT_INFO.name}, программист в {CONTACT_INFO.company} и преподаватель информатики. 
-            Помогаю ученикам не только сдать экзамены, но и полюбить программирование.
+            Я — {CONTACT_INFO.name}, программист в {CONTACT_INFO.company} и
+            преподаватель информатики. Помогаю ученикам не только сдать
+            экзамены, но и полюбить программирование.
           </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-16">
           <div className="space-y-6">
             <div className="space-y-4">
-              <h3 className="text-2xl font-semibold text-gray-900">Мой подход к обучению</h3>
+              <h3 className="text-2xl font-semibold text-gray-900">
+                Мой подход к обучению
+              </h3>
               <p className="text-gray-600 leading-relaxed">
-                Работая программистом в {CONTACT_INFO.company}, я понимаю, какие знания действительно нужны в IT. 
-                Мой опыт сдачи ЕГЭ на {ACHIEVEMENTS.egeScore} баллов помогает ученикам избежать типичных ошибок и эффективно подготовиться к экзаменам.
+                Работая программистом в {CONTACT_INFO.company}, я понимаю, какие
+                знания действительно нужны в IT. Мой опыт сдачи ЕГЭ на{" "}
+                {ACHIEVEMENTS.egeScore} баллов помогает ученикам избежать
+                типичных ошибок и эффективно подготовиться к экзаменам.
               </p>
               <p className="text-gray-600 leading-relaxed">
-                Каждое занятие строится на практических задачах и реальных примерах из профессиональной деятельности. 
-                Это помогает не только сдать экзамен, но и понять, как программирование применяется в жизни.
+                Каждое занятие строится на практических задачах и реальных
+                примерах из профессиональной деятельности. Это помогает не
+                только сдать экзамен, но и понять, как программирование
+                применяется в жизни.
               </p>
             </div>
 
             <div className="space-y-3">
-              <h4 className="font-semibold text-gray-900">Технологии и навыки:</h4>
+              <h4 className="font-semibold text-gray-900">
+                Технологии и навыки:
+              </h4>
               <div className="flex flex-wrap gap-2">
                 {skills.map((skill, index) => (
-                  <Badge key={index} variant="secondary" className="bg-white text-gray-700 hover:bg-gray-50">
+                  <Badge
+                    key={index}
+                    variant="secondary"
+                    className="bg-white text-gray-700 hover:bg-gray-50"
+                  >
                     {skill}
                   </Badge>
                 ))}
@@ -76,7 +91,7 @@ export function AboutSection() {
           <div className="relative">
             <div className="relative z-10">
               <img
-                src={PHOTOS.profile}
+                src={PHOTOS.profile2}
                 alt="Дмитрий Андреевич Тепляшин в офисе"
                 className="w-full max-w-sm mx-auto rounded-2xl shadow-xl"
                 loading="lazy"
@@ -89,13 +104,20 @@ export function AboutSection() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {benefits.map((benefit, index) => (
-            <Card key={index} className="text-center hover:shadow-lg transition-shadow">
+            <Card
+              key={index}
+              className="text-center hover:shadow-lg transition-shadow"
+            >
               <CardContent className="p-8">
                 <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-blue-600">
                   {benefit.icon}
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-3">{benefit.title}</h3>
-                <p className="text-gray-600 leading-relaxed">{benefit.description}</p>
+                <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                  {benefit.title}
+                </h3>
+                <p className="text-gray-600 leading-relaxed">
+                  {benefit.description}
+                </p>
               </CardContent>
             </Card>
           ))}
@@ -103,25 +125,35 @@ export function AboutSection() {
 
         <div className="mt-16 bg-white rounded-2xl shadow-xl p-8 md:p-12">
           <div className="text-center mb-8">
-            <h3 className="text-2xl font-bold text-gray-900 mb-4">Почему выбирают меня</h3>
+            <h3 className="text-2xl font-bold text-gray-900 mb-4">
+              Почему выбирают меня
+            </h3>
             <p className="text-gray-600">Результаты говорят сами за себя</p>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 text-center">
             <div>
-              <p className="text-3xl font-bold text-blue-600 mb-2">{ACHIEVEMENTS.studentsCount}+</p>
+              <p className="text-3xl font-bold text-blue-600 mb-2">
+                {ACHIEVEMENTS.studentsCount}+
+              </p>
               <p className="text-gray-600">учеников подготовлено</p>
             </div>
             <div>
-              <p className="text-3xl font-bold text-green-600 mb-2">{ACHIEVEMENTS.egeScore}</p>
+              <p className="text-3xl font-bold text-green-600 mb-2">
+                {ACHIEVEMENTS.egeScore}
+              </p>
               <p className="text-gray-600">баллов мой ЕГЭ</p>
             </div>
             <div>
-              <p className="text-3xl font-bold text-purple-600 mb-2">{ACHIEVEMENTS.averageStudentScore}</p>
+              <p className="text-3xl font-bold text-purple-600 mb-2">
+                {ACHIEVEMENTS.averageStudentScore}
+              </p>
               <p className="text-gray-600">средний балл учеников</p>
             </div>
             <div>
-              <p className="text-3xl font-bold text-orange-600 mb-2">{ACHIEVEMENTS.experienceYears}+</p>
+              <p className="text-3xl font-bold text-orange-600 mb-2">
+                {ACHIEVEMENTS.experienceYears}+
+              </p>
               <p className="text-gray-600">лет опыта в IT</p>
             </div>
           </div>

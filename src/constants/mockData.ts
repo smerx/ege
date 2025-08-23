@@ -42,6 +42,7 @@ export const ACHIEVEMENTS = {
 // Рабочие изображения (замените на ваши реальные фото при публикации)
 export const PHOTOS = {
   profile: "https://i.ibb.co/KvnnGnZ/photo-2025-08-21-20-06-59.jpg",
+  profile2: "https://i.ibb.co/VWT6ddkk/image.png",
   baikal: "https://i.ibb.co/Gf0dhTg9/photo-2025-08-21-20-18-47.jpg",
   vladivostok: "https://i.ibb.co/xKpfxCLf/photo-2025-08-21-20-19-26.jpg",
 };

@@ -304,7 +304,7 @@ export function StudentDashboard() {
                 return (
                   <Card
                     key={assignment.id}
-                    className="hover:shadow-lg transition-shadow"
+                    className="hover:shadow-lg transition-shadow h-full flex flex-col"
                   >
                     <CardHeader>
                       <div className="flex justify-between items-start">
@@ -330,68 +330,72 @@ export function StudentDashboard() {
                         </div>
                       </div>
                     </CardHeader>
-                    <CardContent>
-                      <p className="text-gray-600 text-sm mb-4">
-                        {assignment.description}
-                      </p>
+                    <CardContent className="flex flex-col h-full">
+                      <div className="flex-1">
+                        <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+                          {assignment.description}
+                        </p>
 
-                      {assignment.image_urls &&
-                        assignment.image_urls.length > 0 && (
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-                            {assignment.image_urls.map((url, index) => (
-                              <ImageWithFallback
-                                key={index}
-                                src={url}
-                                alt={`Изображение ${index + 1}`}
-                                className="w-full h-32 sm:h-40 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-all duration-200 shadow-sm hover:shadow-md"
-                                onClick={() =>
-                                  openImagePreview(
-                                    assignment.image_urls,
-                                    index,
-                                    assignment.title
-                                  )
-                                }
-                                onError={(e) => {
-                                  console.error("Image loading error:", url);
-                                }}
-                              />
-                            ))}
+                        {assignment.image_urls &&
+                          assignment.image_urls.length > 0 && (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                              {assignment.image_urls.map((url, index) => (
+                                <ImageWithFallback
+                                  key={index}
+                                  src={url}
+                                  alt={`Изображение ${index + 1}`}
+                                  className="w-full h-32 sm:h-40 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-all duration-200 shadow-sm hover:shadow-md"
+                                  onClick={() =>
+                                    openImagePreview(
+                                      assignment.image_urls,
+                                      index,
+                                      assignment.title
+                                    )
+                                  }
+                                  onError={(e) => {
+                                    console.error("Image loading error:", url);
+                                  }}
+                                />
+                              ))}
+                            </div>
+                          )}
+
+                        {submission?.status === "graded" && (
+                          <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+                            <div className="flex justify-between items-center mb-2">
+                              <span className="font-medium text-green-800">
+                                Оценка: {submission.score}/
+                                {assignment.max_score}
+                              </span>
+                              <span className="text-sm text-green-600">
+                                {Math.round(
+                                  (submission.score! / assignment.max_score) *
+                                    100
+                                )}
+                                %
+                              </span>
+                            </div>
+                            {submission.feedback && (
+                              <p className="text-sm text-green-700">
+                                {submission.feedback}
+                              </p>
+                            )}
                           </div>
                         )}
 
-                      {submission?.status === "graded" && (
-                        <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="font-medium text-green-800">
-                              Оценка: {submission.score}/{assignment.max_score}
-                            </span>
-                            <span className="text-sm text-green-600">
-                              {Math.round(
-                                (submission.score! / assignment.max_score) * 100
-                              )}
-                              %
-                            </span>
-                          </div>
-                          {submission.feedback && (
-                            <p className="text-sm text-green-700">
-                              {submission.feedback}
+                        {submission?.status === "pending" && (
+                          <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-4">
+                            <p className="text-sm text-orange-700">
+                              Задание отправлено на проверку{" "}
+                              {new Date(
+                                submission.submitted_at
+                              ).toLocaleDateString()}
                             </p>
-                          )}
-                        </div>
-                      )}
+                          </div>
+                        )}
+                      </div>
 
-                      {submission?.status === "pending" && (
-                        <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-4">
-                          <p className="text-sm text-orange-700">
-                            Задание отправлено на проверку{" "}
-                            {new Date(
-                              submission.submitted_at
-                            ).toLocaleDateString()}
-                          </p>
-                        </div>
-                      )}
-
-                      <div className="flex justify-between items-center">
+                      <div className="flex justify-between items-center mt-auto pt-4">
                         <span className="text-sm text-gray-500">
                           Макс. балл: {assignment.max_score}
                         </span>
@@ -479,10 +483,16 @@ export function StudentDashboard() {
                                         <strong>💡 Подсказка:</strong>
                                       </p>
                                       <p className="text-xs text-blue-600">
-                                        Для выделения кода используйте формат: <code className="bg-blue-100 px-1 rounded">$(ваш код)</code>
+                                        Для выделения кода используйте формат:{" "}
+                                        <code className="bg-blue-100 px-1 rounded">
+                                          $(ваш код)
+                                        </code>
                                       </p>
                                       <p className="text-xs text-blue-600 mt-1">
-                                        Пример: Задание 1 <code className="bg-blue-100 px-1 rounded">$(print("hello world"))</code>
+                                        Пример: Задание 1{" "}
+                                        <code className="bg-blue-100 px-1 rounded">
+                                          $(print("hello world"))
+                                        </code>
                                       </p>
                                     </div>
                                   </div>
@@ -560,7 +570,7 @@ export function StudentDashboard() {
                       <CardContent className="pt-0 pb-4">
                         <div className="border-t border-gray-100 pt-4">
                           <div className="prose prose-sm max-w-none">
-                            <ContentFormatter 
+                            <ContentFormatter
                               content={theory.content}
                               className="text-sm leading-relaxed text-gray-700"
                             />
