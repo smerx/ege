@@ -8,22 +8,52 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../ui/alert-dialog";
 import { toast } from "sonner";
 import { EditAssignmentModal } from "./EditAssignmentModal";
 import { EditTheoryModal } from "./EditTheoryModal";
 import { ImageWithFallback } from "../figma/ImageWithFallback";
 import { ImagePreview } from "../ui/image-preview";
-import { 
-  Plus, 
-  BookOpen, 
-  Users, 
-  FileText, 
-  Edit, 
-  Trash2, 
+import { ContentFormatter } from "../ui/content-formatter";
+import {
+  Plus,
+  BookOpen,
+  Users,
+  FileText,
+  Edit,
+  Trash2,
   Eye,
   LogOut,
   Upload,
@@ -31,7 +61,7 @@ import {
   UserPlus,
   GraduationCap,
   X,
-  Key
+  Key,
 } from "lucide-react";
 
 interface Assignment {
@@ -71,7 +101,7 @@ interface Submission {
   submitted_at: string;
   score?: number;
   feedback?: string;
-  status: 'pending' | 'graded';
+  status: "pending" | "graded";
 }
 
 export function AdminDashboard() {
@@ -89,40 +119,46 @@ export function AdminDashboard() {
   const [isEditStudentOpen, setIsEditStudentOpen] = useState(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
-  const [selectedStudentForPassword, setSelectedStudentForPassword] = useState<Student | null>(null);
-  const [deleteConfirm, setDeleteConfirm] = useState<{type: 'assignment' | 'theory' | 'student', id: string} | null>(null);
+  const [selectedStudentForPassword, setSelectedStudentForPassword] =
+    useState<Student | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    type: "assignment" | "theory" | "student";
+    id: string;
+  } | null>(null);
 
   // Edit modal states
   const [isEditAssignmentOpen, setIsEditAssignmentOpen] = useState(false);
   const [isEditTheoryOpen, setIsEditTheoryOpen] = useState(false);
-  const [editingAssignment, setEditingAssignment] = useState<Assignment | null>(null);
+  const [editingAssignment, setEditingAssignment] = useState<Assignment | null>(
+    null
+  );
   const [editingTheory, setEditingTheory] = useState<TheoryBlock | null>(null);
 
   // Form states
   const [newAssignment, setNewAssignment] = useState({
-    title: '',
-    description: '',
+    title: "",
+    description: "",
     maxScore: 100,
-    images: [] as File[]
+    images: [] as File[],
   });
 
   const [newTheory, setNewTheory] = useState({
-    title: '',
-    content: '',
-    images: [] as File[]
+    title: "",
+    content: "",
+    images: [] as File[],
   });
 
   const [newStudent, setNewStudent] = useState({
-    lastName: '',
-    firstName: '',
-    grade: '',
-    parentPhone: '',
-    username: '',
-    password: '',
-    email: ''
+    lastName: "",
+    firstName: "",
+    grade: "",
+    parentPhone: "",
+    username: "",
+    password: "",
+    email: "",
   });
 
-  const [newPassword, setNewPassword] = useState('');
+  const [newPassword, setNewPassword] = useState("");
   const [previewImages, setPreviewImages] = useState<string[]>([]);
   const [previewIndex, setPreviewIndex] = useState(0);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
@@ -137,36 +173,36 @@ export function AdminDashboard() {
     try {
       // Load assignments
       const { data: assignmentsData } = await supabase
-        .from('assignments')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .from("assignments")
+        .select("*")
+        .order("created_at", { ascending: false });
 
       // Load theory blocks
       const { data: theoryData } = await supabase
-        .from('theory_blocks')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .from("theory_blocks")
+        .select("*")
+        .order("created_at", { ascending: false });
 
       // Load students
       const { data: studentsData } = await supabase
-        .from('users')
-        .select('*')
-        .eq('role', 'student')
-        .order('created_at', { ascending: false });
+        .from("users")
+        .select("*")
+        .eq("role", "student")
+        .order("created_at", { ascending: false });
 
       // Load submissions
       const { data: submissionsData } = await supabase
-        .from('submissions')
-        .select('*')
-        .order('submitted_at', { ascending: false });
+        .from("submissions")
+        .select("*")
+        .order("submitted_at", { ascending: false });
 
       setAssignments(assignmentsData || []);
       setTheoryBlocks(theoryData || []);
       setStudents(studentsData || []);
       setSubmissions(submissionsData || []);
     } catch (error) {
-      console.error('Error loading data:', error);
-      toast.error('Ошибка загрузки данных');
+      console.error("Error loading data:", error);
+      toast.error("Ошибка загрузки данных");
     } finally {
       setLoading(false);
     }
@@ -183,25 +219,28 @@ export function AdminDashboard() {
         if (url) imageUrls.push(url);
       }
 
-      const { error } = await supabase
-        .from('assignments')
-        .insert({
-          title: newAssignment.title,
-          description: newAssignment.description,
-          max_score: newAssignment.maxScore,
-          image_urls: imageUrls,
-          created_by: user?.id || '1'
-        });
+      const { error } = await supabase.from("assignments").insert({
+        title: newAssignment.title,
+        description: newAssignment.description,
+        max_score: newAssignment.maxScore,
+        image_urls: imageUrls,
+        created_by: user?.id || "1",
+      });
 
       if (error) throw error;
 
-      toast.success('Задание создано успешно');
-      setNewAssignment({ title: '', description: '', maxScore: 100, images: [] });
+      toast.success("Задание создано успешно");
+      setNewAssignment({
+        title: "",
+        description: "",
+        maxScore: 100,
+        images: [],
+      });
       setIsCreateAssignmentOpen(false);
       loadData();
     } catch (error) {
-      console.error('Error creating assignment:', error);
-      toast.error('Ошибка создания задания');
+      console.error("Error creating assignment:", error);
+      toast.error("Ошибка создания задания");
     }
   };
 
@@ -216,24 +255,22 @@ export function AdminDashboard() {
         if (url) imageUrls.push(url);
       }
 
-      const { error } = await supabase
-        .from('theory_blocks')
-        .insert({
-          title: newTheory.title,
-          content: newTheory.content,
-          image_urls: imageUrls,
-          created_by: user?.id || '1'
-        });
+      const { error } = await supabase.from("theory_blocks").insert({
+        title: newTheory.title,
+        content: newTheory.content,
+        image_urls: imageUrls,
+        created_by: user?.id || "1",
+      });
 
       if (error) throw error;
 
-      toast.success('Теория создана успешно');
-      setNewTheory({ title: '', content: '', images: [] });
+      toast.success("Теория создана успешно");
+      setNewTheory({ title: "", content: "", images: [] });
       setIsCreateTheoryOpen(false);
       loadData();
     } catch (error) {
-      console.error('Error creating theory:', error);
-      toast.error('Ошибка создания теории');
+      console.error("Error creating theory:", error);
+      toast.error("Ошибка создания теории");
     }
   };
 
@@ -243,28 +280,34 @@ export function AdminDashboard() {
     try {
       const passwordHash = await hashPassword(newStudent.password);
 
-      const { error } = await supabase
-        .from('users')
-        .insert({
-          email: newStudent.email,
-          username: newStudent.username,
-          first_name: newStudent.firstName,
-          last_name: newStudent.lastName,
-          role: 'student',
-          grade: newStudent.grade,
-          parent_phone: newStudent.parentPhone,
-          password_hash: passwordHash
-        });
+      const { error } = await supabase.from("users").insert({
+        email: newStudent.email,
+        username: newStudent.username,
+        first_name: newStudent.firstName,
+        last_name: newStudent.lastName,
+        role: "student",
+        grade: newStudent.grade,
+        parent_phone: newStudent.parentPhone,
+        password_hash: passwordHash,
+      });
 
       if (error) throw error;
 
-      toast.success('Ученик добавлен успешно');
-      setNewStudent({ lastName: '', firstName: '', grade: '', parentPhone: '', username: '', password: '', email: '' });
+      toast.success("Ученик добавлен успешно");
+      setNewStudent({
+        lastName: "",
+        firstName: "",
+        grade: "",
+        parentPhone: "",
+        username: "",
+        password: "",
+        email: "",
+      });
       setIsAddStudentOpen(false);
       loadData();
     } catch (error) {
-      console.error('Error adding student:', error);
-      toast.error('Ошибка добавления ученика');
+      console.error("Error adding student:", error);
+      toast.error("Ошибка добавления ученика");
     }
   };
 
@@ -273,26 +316,26 @@ export function AdminDashboard() {
 
     try {
       const { error } = await supabase
-        .from('users')
+        .from("users")
         .update({
           email: editingStudent.email,
           username: editingStudent.username,
           first_name: editingStudent.first_name,
           last_name: editingStudent.last_name,
           grade: editingStudent.grade,
-          parent_phone: editingStudent.parent_phone
+          parent_phone: editingStudent.parent_phone,
         })
-        .eq('id', editingStudent.id);
+        .eq("id", editingStudent.id);
 
       if (error) throw error;
 
-      toast.success('Данные ученика обновлены');
+      toast.success("Данные ученика обновлены");
       setEditingStudent(null);
       setIsEditStudentOpen(false);
       loadData();
     } catch (error) {
-      console.error('Error updating student:', error);
-      toast.error('Ошибка обновления данных');
+      console.error("Error updating student:", error);
+      toast.error("Ошибка обновления данных");
     }
   };
 
@@ -303,40 +346,44 @@ export function AdminDashboard() {
       const passwordHash = await hashPassword(newPassword);
 
       const { error } = await supabase
-        .from('users')
+        .from("users")
         .update({ password_hash: passwordHash })
-        .eq('id', selectedStudentForPassword.id);
+        .eq("id", selectedStudentForPassword.id);
 
       if (error) throw error;
 
-      toast.success('Пароль изменен успешно');
-      setNewPassword('');
+      toast.success("Пароль изменен успешно");
+      setNewPassword("");
       setSelectedStudentForPassword(null);
       setIsChangePasswordOpen(false);
     } catch (error) {
-      console.error('Error changing password:', error);
-      toast.error('Ошибка изменения пароля');
+      console.error("Error changing password:", error);
+      toast.error("Ошибка изменения пароля");
     }
   };
 
-  const handleGradeSubmission = async (submissionId: string, score: number, feedback: string) => {
+  const handleGradeSubmission = async (
+    submissionId: string,
+    score: number,
+    feedback: string
+  ) => {
     try {
       const { error } = await supabase
-        .from('submissions')
+        .from("submissions")
         .update({
           score,
           feedback,
-          status: 'graded'
+          status: "graded",
         })
-        .eq('id', submissionId);
+        .eq("id", submissionId);
 
       if (error) throw error;
 
-      toast.success('Оценка выставлена');
+      toast.success("Оценка выставлена");
       loadData();
     } catch (error) {
-      console.error('Error grading submission:', error);
-      toast.error('Ошибка выставления оценки');
+      console.error("Error grading submission:", error);
+      toast.error("Ошибка выставления оценки");
     }
   };
 
@@ -344,57 +391,64 @@ export function AdminDashboard() {
     if (!deleteConfirm) return;
 
     try {
-      let tableName = '';
-      if (deleteConfirm.type === 'assignment') {
-        tableName = 'assignments';
-      } else if (deleteConfirm.type === 'theory') {
-        tableName = 'theory_blocks';
-      } else if (deleteConfirm.type === 'student') {
-        tableName = 'users';
+      let tableName = "";
+      if (deleteConfirm.type === "assignment") {
+        tableName = "assignments";
+      } else if (deleteConfirm.type === "theory") {
+        tableName = "theory_blocks";
+      } else if (deleteConfirm.type === "student") {
+        tableName = "users";
       }
 
       const { error } = await supabase
         .from(tableName)
         .delete()
-        .eq('id', deleteConfirm.id);
+        .eq("id", deleteConfirm.id);
 
       if (error) throw error;
 
-      toast.success('Элемент удален');
+      toast.success("Элемент удален");
       setDeleteConfirm(null);
       loadData();
     } catch (error) {
-      console.error('Error deleting item:', error);
-      toast.error('Ошибка удаления');
+      console.error("Error deleting item:", error);
+      toast.error("Ошибка удаления");
     }
   };
 
-  const openDeleteConfirm = (type: 'assignment' | 'theory' | 'student', id: string) => {
+  const openDeleteConfirm = (
+    type: "assignment" | "theory" | "student",
+    id: string
+  ) => {
     setDeleteConfirm({ type, id });
   };
 
-  const removeImage = (index: number, type: 'assignment' | 'theory') => {
-    if (type === 'assignment') {
+  const removeImage = (index: number, type: "assignment" | "theory") => {
+    if (type === "assignment") {
       setNewAssignment({
         ...newAssignment,
-        images: newAssignment.images.filter((_, i) => i !== index)
+        images: newAssignment.images.filter((_, i) => i !== index),
       });
     } else {
       setNewTheory({
         ...newTheory,
-        images: newTheory.images.filter((_, i) => i !== index)
+        images: newTheory.images.filter((_, i) => i !== index),
       });
     }
   };
 
-  const openImagePreview = (images: string[], index: number = 0, title?: string) => {
+  const openImagePreview = (
+    images: string[],
+    index: number = 0,
+    title?: string
+  ) => {
     setPreviewImages(images);
     setPreviewIndex(index);
     setPreviewTitle(title || "");
     setIsPreviewOpen(true);
   };
 
-  const pendingSubmissions = submissions.filter(s => s.status === 'pending');
+  const pendingSubmissions = submissions.filter((s) => s.status === "pending");
 
   // Функции для редактирования
   const handleEditAssignment = (assignment: Assignment) => {
@@ -407,7 +461,10 @@ export function AdminDashboard() {
     setIsEditTheoryOpen(true);
   };
 
-  const handleSaveAssignment = async (updatedAssignment: Assignment, newImages: File[]) => {
+  const handleSaveAssignment = async (
+    updatedAssignment: Assignment,
+    newImages: File[]
+  ) => {
     try {
       // Upload new images
       const newImageUrls: string[] = [];
@@ -420,28 +477,31 @@ export function AdminDashboard() {
       const allImageUrls = [...updatedAssignment.image_urls, ...newImageUrls];
 
       const { error } = await supabase
-        .from('assignments')
+        .from("assignments")
         .update({
           title: updatedAssignment.title,
           description: updatedAssignment.description,
           max_score: updatedAssignment.max_score,
-          image_urls: allImageUrls
+          image_urls: allImageUrls,
         })
-        .eq('id', updatedAssignment.id);
+        .eq("id", updatedAssignment.id);
 
       if (error) throw error;
 
-      toast.success('Задание обновлено успешно');
+      toast.success("Задание обновлено успешно");
       setIsEditAssignmentOpen(false);
       setEditingAssignment(null);
       loadData();
     } catch (error) {
-      console.error('Error updating assignment:', error);
-      toast.error('Ошибка обновления задания');
+      console.error("Error updating assignment:", error);
+      toast.error("Ошибка обновления задания");
     }
   };
 
-  const handleSaveTheory = async (updatedTheory: TheoryBlock, newImages: File[]) => {
+  const handleSaveTheory = async (
+    updatedTheory: TheoryBlock,
+    newImages: File[]
+  ) => {
     try {
       // Upload new images
       const newImageUrls: string[] = [];
@@ -454,23 +514,23 @@ export function AdminDashboard() {
       const allImageUrls = [...updatedTheory.image_urls, ...newImageUrls];
 
       const { error } = await supabase
-        .from('theory_blocks')
+        .from("theory_blocks")
         .update({
           title: updatedTheory.title,
           content: updatedTheory.content,
-          image_urls: allImageUrls
+          image_urls: allImageUrls,
         })
-        .eq('id', updatedTheory.id);
+        .eq("id", updatedTheory.id);
 
       if (error) throw error;
 
-      toast.success('Теория обновлена успешно');
+      toast.success("Теория обновлена успешно");
       setIsEditTheoryOpen(false);
       setEditingTheory(null);
       loadData();
     } catch (error) {
-      console.error('Error updating theory:', error);
-      toast.error('Ошибка обновления теории');
+      console.error("Error updating theory:", error);
+      toast.error("Ошибка обновления теории");
     }
   };
 
@@ -493,8 +553,12 @@ export function AdminDashboard() {
             <div className="flex items-center space-x-4">
               <GraduationCap className="w-8 h-8 text-blue-600" />
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Панель администратора</h1>
-                <p className="text-sm text-gray-600">Дмитрий Андреевич Тепляшин</p>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  Панель администратора
+                </h1>
+                <p className="text-sm text-gray-600">
+                  Дмитрий Андреевич Тепляшин
+                </p>
               </div>
             </div>
             <div className="flex items-center space-x-4">
@@ -515,7 +579,9 @@ export function AdminDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Всего учеников</p>
-                  <p className="text-2xl font-bold text-gray-900">{students.length}</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {students.length}
+                  </p>
                 </div>
                 <Users className="w-8 h-8 text-blue-600" />
               </div>
@@ -527,7 +593,9 @@ export function AdminDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Активных заданий</p>
-                  <p className="text-2xl font-bold text-gray-900">{assignments.length}</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {assignments.length}
+                  </p>
                 </div>
                 <FileText className="w-8 h-8 text-green-600" />
               </div>
@@ -539,7 +607,9 @@ export function AdminDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Ожидают проверки</p>
-                  <p className="text-2xl font-bold text-gray-900">{pendingSubmissions.length}</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {pendingSubmissions.length}
+                  </p>
                 </div>
                 <Eye className="w-8 h-8 text-orange-600" />
               </div>
@@ -551,7 +621,9 @@ export function AdminDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Теорий создано</p>
-                  <p className="text-2xl font-bold text-gray-900">{theoryBlocks.length}</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {theoryBlocks.length}
+                  </p>
                 </div>
                 <BookOpen className="w-8 h-8 text-purple-600" />
               </div>
@@ -570,8 +642,13 @@ export function AdminDashboard() {
           {/* Задания */}
           <TabsContent value="assignments" className="space-y-6">
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold text-gray-900">Управление заданиями</h2>
-              <Dialog open={isCreateAssignmentOpen} onOpenChange={setIsCreateAssignmentOpen}>
+              <h2 className="text-xl font-semibold text-gray-900">
+                Управление заданиями
+              </h2>
+              <Dialog
+                open={isCreateAssignmentOpen}
+                onOpenChange={setIsCreateAssignmentOpen}
+              >
                 <DialogTrigger asChild>
                   <Button>
                     <Plus className="w-4 h-4 mr-2" />
@@ -587,52 +664,88 @@ export function AdminDashboard() {
                   </DialogHeader>
                   <div className="space-y-6">
                     <div className="space-y-3">
-                      <Label htmlFor="title" className="text-sm font-medium">Заголовок задания</Label>
+                      <Label htmlFor="title" className="text-sm font-medium">
+                        Заголовок задания
+                      </Label>
                       <Input
                         id="title"
                         value={newAssignment.title}
-                        onChange={(e) => setNewAssignment({...newAssignment, title: e.target.value})}
+                        onChange={(e) =>
+                          setNewAssignment({
+                            ...newAssignment,
+                            title: e.target.value,
+                          })
+                        }
                         placeholder="Введите заголовок..."
                       />
                     </div>
                     <div className="space-y-3">
-                      <Label htmlFor="description" className="text-sm font-medium">Описание задания</Label>
+                      <Label
+                        htmlFor="description"
+                        className="text-sm font-medium"
+                      >
+                        Описание задания
+                      </Label>
                       <Textarea
                         id="description"
                         value={newAssignment.description}
-                        onChange={(e) => setNewAssignment({...newAssignment, description: e.target.value})}
+                        onChange={(e) =>
+                          setNewAssignment({
+                            ...newAssignment,
+                            description: e.target.value,
+                          })
+                        }
                         placeholder="Подробное описание задания..."
                         rows={4}
                       />
                     </div>
                     <div className="space-y-3">
-                      <Label htmlFor="maxScore" className="text-sm font-medium">Максимальный балл</Label>
+                      <Label htmlFor="maxScore" className="text-sm font-medium">
+                        Максимальный балл
+                      </Label>
                       <Input
                         id="maxScore"
                         type="number"
                         value={newAssignment.maxScore}
-                        onChange={(e) => setNewAssignment({...newAssignment, maxScore: parseInt(e.target.value) || 100})}
+                        onChange={(e) =>
+                          setNewAssignment({
+                            ...newAssignment,
+                            maxScore: parseInt(e.target.value) || 100,
+                          })
+                        }
                       />
                     </div>
                     <div className="space-y-3">
-                      <Label htmlFor="images" className="text-sm font-medium">Изображения (можно выбрать несколько)</Label>
+                      <Label htmlFor="images" className="text-sm font-medium">
+                        Изображения (можно выбрать несколько)
+                      </Label>
                       <Input
                         id="images"
                         type="file"
                         accept="image/*"
                         multiple
-                        onChange={(e) => setNewAssignment({...newAssignment, images: Array.from(e.target.files || [])})}
+                        onChange={(e) =>
+                          setNewAssignment({
+                            ...newAssignment,
+                            images: Array.from(e.target.files || []),
+                          })
+                        }
                       />
                       {newAssignment.images.length > 0 && (
                         <div className="space-y-2">
                           {newAssignment.images.map((file, index) => (
-                            <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                              <span className="text-sm text-gray-600">{file.name}</span>
+                            <div
+                              key={index}
+                              className="flex items-center justify-between p-2 bg-gray-50 rounded"
+                            >
+                              <span className="text-sm text-gray-600">
+                                {file.name}
+                              </span>
                               <Button
                                 type="button"
                                 variant="outline"
                                 size="sm"
-                                onClick={() => removeImage(index, 'assignment')}
+                                onClick={() => removeImage(index, "assignment")}
                               >
                                 <X className="w-4 h-4" />
                               </Button>
@@ -642,10 +755,16 @@ export function AdminDashboard() {
                       )}
                     </div>
                     <div className="flex justify-end space-x-2">
-                      <Button variant="outline" onClick={() => setIsCreateAssignmentOpen(false)}>
+                      <Button
+                        variant="outline"
+                        onClick={() => setIsCreateAssignmentOpen(false)}
+                      >
                         Отмена
                       </Button>
-                      <Button onClick={handleCreateAssignment} disabled={!newAssignment.title.trim()}>
+                      <Button
+                        onClick={handleCreateAssignment}
+                        disabled={!newAssignment.title.trim()}
+                      >
                         <Save className="w-4 h-4 mr-2" />
                         Создать
                       </Button>
@@ -660,15 +779,23 @@ export function AdminDashboard() {
                 <Card key={assignment.id}>
                   <CardHeader>
                     <div className="flex justify-between items-start">
-                      <CardTitle className="text-lg">{assignment.title}</CardTitle>
+                      <CardTitle className="text-lg">
+                        {assignment.title}
+                      </CardTitle>
                       <div className="flex space-x-1">
-                        <Button size="sm" variant="outline" onClick={() => handleEditAssignment(assignment)}>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEditAssignment(assignment)}
+                        >
                           <Edit className="w-4 h-4" />
                         </Button>
-                        <Button 
-                          size="sm" 
+                        <Button
+                          size="sm"
                           variant="outline"
-                          onClick={() => openDeleteConfirm('assignment', assignment.id)}
+                          onClick={() =>
+                            openDeleteConfirm("assignment", assignment.id)
+                          }
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
@@ -676,28 +803,46 @@ export function AdminDashboard() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-gray-600 text-sm mb-3 line-clamp-3">{assignment.description}</p>
-                    {assignment.image_urls && assignment.image_urls.length > 0 && (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-                        {assignment.image_urls.slice(0, 2).map((url, index) => (
-                          <ImageWithFallback 
-                            key={index} 
-                            src={url} 
-                            alt={`Изображение ${index + 1}`} 
-                            className="w-full h-24 sm:h-28 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-all duration-200 shadow-sm hover:shadow-md" 
-                            onClick={() => openImagePreview(assignment.image_urls, index, assignment.title)}
-                          />
-                        ))}
-                        {assignment.image_urls.length > 2 && (
-                          <div className="bg-gray-100 rounded-lg flex items-center justify-center h-24 sm:h-28">
-                            <span className="text-xs text-gray-500">+{assignment.image_urls.length - 2}</span>
-                          </div>
-                        )}
-                      </div>
-                    )}
+                    <p className="text-gray-600 text-sm mb-3 line-clamp-3">
+                      {assignment.description}
+                    </p>
+                    {assignment.image_urls &&
+                      assignment.image_urls.length > 0 && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                          {assignment.image_urls
+                            .slice(0, 2)
+                            .map((url, index) => (
+                              <ImageWithFallback
+                                key={index}
+                                src={url}
+                                alt={`Изображение ${index + 1}`}
+                                className="w-full h-24 sm:h-28 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-all duration-200 shadow-sm hover:shadow-md"
+                                onClick={() =>
+                                  openImagePreview(
+                                    assignment.image_urls,
+                                    index,
+                                    assignment.title
+                                  )
+                                }
+                              />
+                            ))}
+                          {assignment.image_urls.length > 2 && (
+                            <div className="bg-gray-100 rounded-lg flex items-center justify-center h-24 sm:h-28">
+                              <span className="text-xs text-gray-500">
+                                +{assignment.image_urls.length - 2}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     <div className="flex justify-between items-center text-sm text-gray-500">
-                      <span>Создано: {new Date(assignment.created_at).toLocaleDateString()}</span>
-                      <Badge variant="secondary">{assignment.max_score} баллов</Badge>
+                      <span>
+                        Создано:{" "}
+                        {new Date(assignment.created_at).toLocaleDateString()}
+                      </span>
+                      <Badge variant="secondary">
+                        {assignment.max_score} баллов
+                      </Badge>
                     </div>
                   </CardContent>
                 </Card>
@@ -708,8 +853,13 @@ export function AdminDashboard() {
           {/* Теория */}
           <TabsContent value="theory" className="space-y-6">
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold text-gray-900">Теоретические материалы</h2>
-              <Dialog open={isCreateTheoryOpen} onOpenChange={setIsCreateTheoryOpen}>
+              <h2 className="text-xl font-semibold text-gray-900">
+                Теоретические материалы
+              </h2>
+              <Dialog
+                open={isCreateTheoryOpen}
+                onOpenChange={setIsCreateTheoryOpen}
+              >
                 <DialogTrigger asChild>
                   <Button>
                     <Plus className="w-4 h-4 mr-2" />
@@ -725,43 +875,75 @@ export function AdminDashboard() {
                   </DialogHeader>
                   <div className="space-y-6">
                     <div className="space-y-3">
-                      <Label htmlFor="theoryTitle" className="text-sm font-medium">Заголовок</Label>
+                      <Label
+                        htmlFor="theoryTitle"
+                        className="text-sm font-medium"
+                      >
+                        Заголовок
+                      </Label>
                       <Input
                         id="theoryTitle"
                         value={newTheory.title}
-                        onChange={(e) => setNewTheory({...newTheory, title: e.target.value})}
+                        onChange={(e) =>
+                          setNewTheory({ ...newTheory, title: e.target.value })
+                        }
                         placeholder="Название темы..."
                       />
                     </div>
                     <div className="space-y-3">
-                      <Label htmlFor="theoryContent" className="text-sm font-medium">Содержание</Label>
+                      <Label
+                        htmlFor="theoryContent"
+                        className="text-sm font-medium"
+                      >
+                        Содержание
+                      </Label>
                       <Textarea
                         id="theoryContent"
                         value={newTheory.content}
-                        onChange={(e) => setNewTheory({...newTheory, content: e.target.value})}
+                        onChange={(e) =>
+                          setNewTheory({
+                            ...newTheory,
+                            content: e.target.value,
+                          })
+                        }
                         placeholder="Теоретический материал..."
                         rows={6}
                       />
                     </div>
                     <div className="space-y-3">
-                      <Label htmlFor="theoryImages" className="text-sm font-medium">Изображения (можно выбрать несколько)</Label>
+                      <Label
+                        htmlFor="theoryImages"
+                        className="text-sm font-medium"
+                      >
+                        Изображения (можно выбрать несколько)
+                      </Label>
                       <Input
                         id="theoryImages"
                         type="file"
                         accept="image/*"
                         multiple
-                        onChange={(e) => setNewTheory({...newTheory, images: Array.from(e.target.files || [])})}
+                        onChange={(e) =>
+                          setNewTheory({
+                            ...newTheory,
+                            images: Array.from(e.target.files || []),
+                          })
+                        }
                       />
                       {newTheory.images.length > 0 && (
                         <div className="space-y-2">
                           {newTheory.images.map((file, index) => (
-                            <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                              <span className="text-sm text-gray-600">{file.name}</span>
+                            <div
+                              key={index}
+                              className="flex items-center justify-between p-2 bg-gray-50 rounded"
+                            >
+                              <span className="text-sm text-gray-600">
+                                {file.name}
+                              </span>
                               <Button
                                 type="button"
                                 variant="outline"
                                 size="sm"
-                                onClick={() => removeImage(index, 'theory')}
+                                onClick={() => removeImage(index, "theory")}
                               >
                                 <X className="w-4 h-4" />
                               </Button>
@@ -771,10 +953,16 @@ export function AdminDashboard() {
                       )}
                     </div>
                     <div className="flex justify-end space-x-2">
-                      <Button variant="outline" onClick={() => setIsCreateTheoryOpen(false)}>
+                      <Button
+                        variant="outline"
+                        onClick={() => setIsCreateTheoryOpen(false)}
+                      >
                         Отмена
                       </Button>
-                      <Button onClick={handleCreateTheory} disabled={!newTheory.title.trim()}>
+                      <Button
+                        onClick={handleCreateTheory}
+                        disabled={!newTheory.title.trim()}
+                      >
                         <Save className="w-4 h-4 mr-2" />
                         Создать
                       </Button>
@@ -791,13 +979,17 @@ export function AdminDashboard() {
                     <div className="flex justify-between items-start">
                       <CardTitle className="text-lg">{theory.title}</CardTitle>
                       <div className="flex space-x-1">
-                        <Button size="sm" variant="outline" onClick={() => handleEditTheory(theory)}>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEditTheory(theory)}
+                        >
                           <Edit className="w-4 h-4" />
                         </Button>
-                        <Button 
-                          size="sm" 
+                        <Button
+                          size="sm"
                           variant="outline"
-                          onClick={() => openDeleteConfirm('theory', theory.id)}
+                          onClick={() => openDeleteConfirm("theory", theory.id)}
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
@@ -805,26 +997,42 @@ export function AdminDashboard() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-gray-600 text-sm mb-3 line-clamp-3">{theory.content}</p>
+                    <div className="text-gray-600 text-sm mb-3 line-clamp-3">
+                      <ContentFormatter 
+                        content={theory.content}
+                        className="text-sm"
+                      />
+                    </div>
                     {theory.image_urls.length > 0 && (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                         {theory.image_urls.slice(0, 2).map((img, index) => (
-                          <ImageWithFallback 
-                            key={index} 
-                            src={img} 
-                            alt={`Изображение ${index + 1}`} 
+                          <ImageWithFallback
+                            key={index}
+                            src={img}
+                            alt={`Изображение ${index + 1}`}
                             className="w-full h-24 sm:h-28 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-all duration-200 shadow-sm hover:shadow-md"
-                            onClick={() => openImagePreview(theory.image_urls, index, theory.title)}
+                            onClick={() =>
+                              openImagePreview(
+                                theory.image_urls,
+                                index,
+                                theory.title
+                              )
+                            }
                           />
                         ))}
                         {theory.image_urls.length > 2 && (
                           <div className="bg-gray-100 rounded-lg flex items-center justify-center h-24 sm:h-28">
-                            <span className="text-xs text-gray-500">+{theory.image_urls.length - 2}</span>
+                            <span className="text-xs text-gray-500">
+                              +{theory.image_urls.length - 2}
+                            </span>
                           </div>
                         )}
                       </div>
                     )}
-                    <p className="text-xs text-gray-500">Создано: {new Date(theory.created_at).toLocaleDateString()}</p>
+                    <p className="text-xs text-gray-500">
+                      Создано:{" "}
+                      {new Date(theory.created_at).toLocaleDateString()}
+                    </p>
                   </CardContent>
                 </Card>
               ))}
@@ -834,8 +1042,13 @@ export function AdminDashboard() {
           {/* Ученики */}
           <TabsContent value="students" className="space-y-6">
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold text-gray-900">Управление учениками</h2>
-              <Dialog open={isAddStudentOpen} onOpenChange={setIsAddStudentOpen}>
+              <h2 className="text-xl font-semibold text-gray-900">
+                Управление учениками
+              </h2>
+              <Dialog
+                open={isAddStudentOpen}
+                onOpenChange={setIsAddStudentOpen}
+              >
                 <DialogTrigger asChild>
                   <Button>
                     <UserPlus className="w-4 h-4 mr-2" />
@@ -856,7 +1069,12 @@ export function AdminDashboard() {
                         <Input
                           id="lastName"
                           value={newStudent.lastName}
-                          onChange={(e) => setNewStudent({...newStudent, lastName: e.target.value})}
+                          onChange={(e) =>
+                            setNewStudent({
+                              ...newStudent,
+                              lastName: e.target.value,
+                            })
+                          }
                           placeholder="Иванов"
                         />
                       </div>
@@ -865,7 +1083,12 @@ export function AdminDashboard() {
                         <Input
                           id="firstName"
                           value={newStudent.firstName}
-                          onChange={(e) => setNewStudent({...newStudent, firstName: e.target.value})}
+                          onChange={(e) =>
+                            setNewStudent({
+                              ...newStudent,
+                              firstName: e.target.value,
+                            })
+                          }
                           placeholder="Александр"
                         />
                       </div>
@@ -876,14 +1099,24 @@ export function AdminDashboard() {
                         id="email"
                         type="email"
                         value={newStudent.email}
-                        onChange={(e) => setNewStudent({...newStudent, email: e.target.value})}
+                        onChange={(e) =>
+                          setNewStudent({
+                            ...newStudent,
+                            email: e.target.value,
+                          })
+                        }
                         placeholder="student@example.com"
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-3">
                         <Label htmlFor="grade">Класс</Label>
-                        <Select value={newStudent.grade} onValueChange={(value) => setNewStudent({...newStudent, grade: value})}>
+                        <Select
+                          value={newStudent.grade}
+                          onValueChange={(value) =>
+                            setNewStudent({ ...newStudent, grade: value })
+                          }
+                        >
                           <SelectTrigger>
                             <SelectValue placeholder="Выберите класс" />
                           </SelectTrigger>
@@ -899,7 +1132,12 @@ export function AdminDashboard() {
                         <Input
                           id="parentPhone"
                           value={newStudent.parentPhone}
-                          onChange={(e) => setNewStudent({...newStudent, parentPhone: e.target.value})}
+                          onChange={(e) =>
+                            setNewStudent({
+                              ...newStudent,
+                              parentPhone: e.target.value,
+                            })
+                          }
                           placeholder="+7900123456"
                         />
                       </div>
@@ -910,7 +1148,12 @@ export function AdminDashboard() {
                         <Input
                           id="username"
                           value={newStudent.username}
-                          onChange={(e) => setNewStudent({...newStudent, username: e.target.value})}
+                          onChange={(e) =>
+                            setNewStudent({
+                              ...newStudent,
+                              username: e.target.value,
+                            })
+                          }
                           placeholder="ivanov_alex"
                         />
                       </div>
@@ -920,16 +1163,30 @@ export function AdminDashboard() {
                           id="password"
                           type="password"
                           value={newStudent.password}
-                          onChange={(e) => setNewStudent({...newStudent, password: e.target.value})}
+                          onChange={(e) =>
+                            setNewStudent({
+                              ...newStudent,
+                              password: e.target.value,
+                            })
+                          }
                           placeholder="Пароль"
                         />
                       </div>
                     </div>
                     <div className="flex justify-end space-x-2">
-                      <Button variant="outline" onClick={() => setIsAddStudentOpen(false)}>
+                      <Button
+                        variant="outline"
+                        onClick={() => setIsAddStudentOpen(false)}
+                      >
                         Отмена
                       </Button>
-                      <Button onClick={handleAddStudent} disabled={!newStudent.username.trim() || !newStudent.password.trim()}>
+                      <Button
+                        onClick={handleAddStudent}
+                        disabled={
+                          !newStudent.username.trim() ||
+                          !newStudent.password.trim()
+                        }
+                      >
                         <UserPlus className="w-4 h-4 mr-2" />
                         Добавить
                       </Button>
@@ -960,11 +1217,13 @@ export function AdminDashboard() {
                       <TableCell>{student.email}</TableCell>
                       <TableCell>{student.grade}</TableCell>
                       <TableCell>{student.parent_phone}</TableCell>
-                      <TableCell className="font-mono text-sm">{student.username}</TableCell>
+                      <TableCell className="font-mono text-sm">
+                        {student.username}
+                      </TableCell>
                       <TableCell>
                         <div className="flex space-x-1">
-                          <Button 
-                            size="sm" 
+                          <Button
+                            size="sm"
                             variant="outline"
                             onClick={() => {
                               setEditingStudent(student);
@@ -973,8 +1232,8 @@ export function AdminDashboard() {
                           >
                             <Edit className="w-4 h-4" />
                           </Button>
-                          <Button 
-                            size="sm" 
+                          <Button
+                            size="sm"
                             variant="outline"
                             onClick={() => {
                               setSelectedStudentForPassword(student);
@@ -983,10 +1242,12 @@ export function AdminDashboard() {
                           >
                             <Key className="w-4 h-4" />
                           </Button>
-                          <Button 
-                            size="sm" 
+                          <Button
+                            size="sm"
                             variant="outline"
-                            onClick={() => openDeleteConfirm('student', student.id)}
+                            onClick={() =>
+                              openDeleteConfirm("student", student.id)
+                            }
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
@@ -1001,25 +1262,45 @@ export function AdminDashboard() {
 
           {/* Проверка работ */}
           <TabsContent value="submissions" className="space-y-6">
-            <h2 className="text-xl font-semibold text-gray-900">Проверка работ учеников</h2>
-            
+            <h2 className="text-xl font-semibold text-gray-900">
+              Проверка работ учеников
+            </h2>
+
             <div className="space-y-4">
               {submissions.map((submission) => {
-                const student = students.find(s => s.id === submission.student_id);
-                const assignment = assignments.find(a => a.id === submission.assignment_id);
-                
+                const student = students.find(
+                  (s) => s.id === submission.student_id
+                );
+                const assignment = assignments.find(
+                  (a) => a.id === submission.assignment_id
+                );
+
                 return (
                   <Card key={submission.id}>
                     <CardHeader>
                       <div className="flex justify-between items-start">
                         <div>
                           <CardTitle className="text-lg">
-                            {assignment?.title} - {student?.last_name} {student?.first_name}
+                            {assignment?.title} - {student?.last_name}{" "}
+                            {student?.first_name}
                           </CardTitle>
-                          <p className="text-sm text-gray-600">Сдано: {new Date(submission.submitted_at).toLocaleDateString()}</p>
+                          <p className="text-sm text-gray-600">
+                            Сдано:{" "}
+                            {new Date(
+                              submission.submitted_at
+                            ).toLocaleDateString()}
+                          </p>
                         </div>
-                        <Badge variant={submission.status === 'pending' ? 'outline' : 'default'}>
-                          {submission.status === 'pending' ? 'На проверке' : 'Проверено'}
+                        <Badge
+                          variant={
+                            submission.status === "pending"
+                              ? "outline"
+                              : "default"
+                          }
+                        >
+                          {submission.status === "pending"
+                            ? "На проверке"
+                            : "Проверено"}
                         </Badge>
                       </div>
                     </CardHeader>
@@ -1028,14 +1309,19 @@ export function AdminDashboard() {
                         <div>
                           <Label>Ответ ученика:</Label>
                           <div className="bg-gray-50 rounded-lg p-4 mt-2">
-                            <pre className="text-sm font-mono whitespace-pre-wrap">{submission.content}</pre>
+                            <ContentFormatter 
+                              content={submission.content}
+                              className="text-sm font-mono"
+                            />
                           </div>
                         </div>
-                        
-                        {submission.status === 'pending' && (
+
+                        {submission.status === "pending" && (
                           <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-3">
-                              <Label htmlFor={`score-${submission.id}`}>Оценка (из {assignment?.max_score})</Label>
+                              <Label htmlFor={`score-${submission.id}`}>
+                                Оценка (из {assignment?.max_score})
+                              </Label>
                               <Input
                                 id={`score-${submission.id}`}
                                 type="number"
@@ -1044,7 +1330,9 @@ export function AdminDashboard() {
                               />
                             </div>
                             <div className="space-y-3">
-                              <Label htmlFor={`feedback-${submission.id}`}>Комментарий</Label>
+                              <Label htmlFor={`feedback-${submission.id}`}>
+                                Комментарий
+                              </Label>
                               <Textarea
                                 id={`feedback-${submission.id}`}
                                 placeholder="Комментарий к работе..."
@@ -1053,27 +1341,45 @@ export function AdminDashboard() {
                             </div>
                           </div>
                         )}
-                        
-                        {submission.status === 'graded' && (
+
+                        {submission.status === "graded" && (
                           <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                            <p><strong>Оценка:</strong> {submission.score}/{assignment?.max_score}</p>
-                            {submission.feedback && <p><strong>Комментарий:</strong> {submission.feedback}</p>}
+                            <p>
+                              <strong>Оценка:</strong> {submission.score}/
+                              {assignment?.max_score}
+                            </p>
+                            {submission.feedback && (
+                              <p>
+                                <strong>Комментарий:</strong>{" "}
+                                {submission.feedback}
+                              </p>
+                            )}
                           </div>
                         )}
-                        
-                        {submission.status === 'pending' && (
+
+                        {submission.status === "pending" && (
                           <div className="flex justify-end">
-                            <Button onClick={() => {
-                              const scoreInput = document.getElementById(`score-${submission.id}`) as HTMLInputElement;
-                              const feedbackInput = document.getElementById(`feedback-${submission.id}`) as HTMLTextAreaElement;
-                              
-                              const score = parseInt(scoreInput.value);
-                              const feedback = feedbackInput.value;
-                              
-                              if (!isNaN(score)) {
-                                handleGradeSubmission(submission.id, score, feedback);
-                              }
-                            }}>
+                            <Button
+                              onClick={() => {
+                                const scoreInput = document.getElementById(
+                                  `score-${submission.id}`
+                                ) as HTMLInputElement;
+                                const feedbackInput = document.getElementById(
+                                  `feedback-${submission.id}`
+                                ) as HTMLTextAreaElement;
+
+                                const score = parseInt(scoreInput.value);
+                                const feedback = feedbackInput.value;
+
+                                if (!isNaN(score)) {
+                                  handleGradeSubmission(
+                                    submission.id,
+                                    score,
+                                    feedback
+                                  );
+                                }
+                              }}
+                            >
                               <Save className="w-4 h-4 mr-2" />
                               Сохранить оценку
                             </Button>
@@ -1094,9 +1400,7 @@ export function AdminDashboard() {
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>Редактировать ученика</DialogTitle>
-            <DialogDescription>
-              Измените данные ученика
-            </DialogDescription>
+            <DialogDescription>Измените данные ученика</DialogDescription>
           </DialogHeader>
           {editingStudent && (
             <div className="space-y-6">
@@ -1106,7 +1410,12 @@ export function AdminDashboard() {
                   <Input
                     id="editLastName"
                     value={editingStudent.last_name}
-                    onChange={(e) => setEditingStudent({...editingStudent, last_name: e.target.value})}
+                    onChange={(e) =>
+                      setEditingStudent({
+                        ...editingStudent,
+                        last_name: e.target.value,
+                      })
+                    }
                   />
                 </div>
                 <div className="space-y-3">
@@ -1114,7 +1423,12 @@ export function AdminDashboard() {
                   <Input
                     id="editFirstName"
                     value={editingStudent.first_name}
-                    onChange={(e) => setEditingStudent({...editingStudent, first_name: e.target.value})}
+                    onChange={(e) =>
+                      setEditingStudent({
+                        ...editingStudent,
+                        first_name: e.target.value,
+                      })
+                    }
                   />
                 </div>
               </div>
@@ -1124,13 +1438,23 @@ export function AdminDashboard() {
                   id="editEmail"
                   type="email"
                   value={editingStudent.email}
-                  onChange={(e) => setEditingStudent({...editingStudent, email: e.target.value})}
+                  onChange={(e) =>
+                    setEditingStudent({
+                      ...editingStudent,
+                      email: e.target.value,
+                    })
+                  }
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-3">
                   <Label htmlFor="editGrade">Класс</Label>
-                  <Select value={editingStudent.grade} onValueChange={(value) => setEditingStudent({...editingStudent, grade: value})}>
+                  <Select
+                    value={editingStudent.grade}
+                    onValueChange={(value) =>
+                      setEditingStudent({ ...editingStudent, grade: value })
+                    }
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -1146,7 +1470,12 @@ export function AdminDashboard() {
                   <Input
                     id="editParentPhone"
                     value={editingStudent.parent_phone}
-                    onChange={(e) => setEditingStudent({...editingStudent, parent_phone: e.target.value})}
+                    onChange={(e) =>
+                      setEditingStudent({
+                        ...editingStudent,
+                        parent_phone: e.target.value,
+                      })
+                    }
                   />
                 </div>
               </div>
@@ -1155,11 +1484,19 @@ export function AdminDashboard() {
                 <Input
                   id="editUsername"
                   value={editingStudent.username}
-                  onChange={(e) => setEditingStudent({...editingStudent, username: e.target.value})}
+                  onChange={(e) =>
+                    setEditingStudent({
+                      ...editingStudent,
+                      username: e.target.value,
+                    })
+                  }
                 />
               </div>
               <div className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={() => setIsEditStudentOpen(false)}>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsEditStudentOpen(false)}
+                >
                   Отмена
                 </Button>
                 <Button onClick={handleEditStudent}>
@@ -1173,12 +1510,17 @@ export function AdminDashboard() {
       </Dialog>
 
       {/* Change Password Dialog */}
-      <Dialog open={isChangePasswordOpen} onOpenChange={setIsChangePasswordOpen}>
+      <Dialog
+        open={isChangePasswordOpen}
+        onOpenChange={setIsChangePasswordOpen}
+      >
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
             <DialogTitle>Изменить пароль</DialogTitle>
             <DialogDescription>
-              Введите новый пароль для ученика {selectedStudentForPassword?.first_name} {selectedStudentForPassword?.last_name}
+              Введите новый пароль для ученика{" "}
+              {selectedStudentForPassword?.first_name}{" "}
+              {selectedStudentForPassword?.last_name}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-6">
@@ -1193,10 +1535,16 @@ export function AdminDashboard() {
               />
             </div>
             <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setIsChangePasswordOpen(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setIsChangePasswordOpen(false)}
+              >
                 Отмена
               </Button>
-              <Button onClick={handleChangePassword} disabled={!newPassword.trim()}>
+              <Button
+                onClick={handleChangePassword}
+                disabled={!newPassword.trim()}
+              >
                 <Key className="w-4 h-4 mr-2" />
                 Изменить пароль
               </Button>
@@ -1206,7 +1554,10 @@ export function AdminDashboard() {
       </Dialog>
 
       {/* Delete Confirmation */}
-      <AlertDialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
+      <AlertDialog
+        open={!!deleteConfirm}
+        onOpenChange={() => setDeleteConfirm(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Подтвердите удаление</AlertDialogTitle>
@@ -1216,7 +1567,9 @@ export function AdminDashboard() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Отмена</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete}>Удалить</AlertDialogAction>
+            <AlertDialogAction onClick={confirmDelete}>
+              Удалить
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

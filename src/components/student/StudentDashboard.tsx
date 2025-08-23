@@ -32,6 +32,7 @@ import {
 import ReactMarkdown from "react-markdown";
 import { ImageWithFallback } from "../figma/ImageWithFallback";
 import { ImagePreview } from "../ui/image-preview";
+import { ContentFormatter } from "../ui/content-formatter";
 
 interface Assignment {
   id: string;
@@ -473,6 +474,17 @@ export function StudentDashboard() {
                                       rows={8}
                                       className="mt-2 font-mono"
                                     />
+                                    <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                      <p className="text-xs text-blue-700 mb-1">
+                                        <strong>💡 Подсказка:</strong>
+                                      </p>
+                                      <p className="text-xs text-blue-600">
+                                        Для выделения кода используйте формат: <code className="bg-blue-100 px-1 rounded">$(ваш код)</code>
+                                      </p>
+                                      <p className="text-xs text-blue-600 mt-1">
+                                        Пример: Задание 1 <code className="bg-blue-100 px-1 rounded">$(print("hello world"))</code>
+                                      </p>
+                                    </div>
                                   </div>
                                   <div className="flex justify-end space-x-2">
                                     <Button
@@ -548,9 +560,10 @@ export function StudentDashboard() {
                       <CardContent className="pt-0 pb-4">
                         <div className="border-t border-gray-100 pt-4">
                           <div className="prose prose-sm max-w-none">
-                            <div className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700">
-                              {theory.content}
-                            </div>
+                            <ContentFormatter 
+                              content={theory.content}
+                              className="text-sm leading-relaxed text-gray-700"
+                            />
                           </div>
                           {theory.image_urls.length > 0 && (
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
