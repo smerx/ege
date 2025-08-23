@@ -1,22 +1,22 @@
-import { useState, useEffect } from 'react';
-import ReactMarkdown from 'react-markdown';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Button } from '../ui/button';
-import { Badge } from '../ui/badge';
-import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
-import { Label } from '../ui/label';
-import { Progress } from '../ui/progress';
-import { Alert } from '../ui/alert';
-import { Assignment, StudentAssignment, Question } from '../../types';
-import { 
-  ArrowLeft, 
-  Clock, 
-  CheckCircle, 
+import { useState, useEffect } from "react";
+import ReactMarkdown from "react-markdown";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Button } from "../ui/button";
+import { Badge } from "../ui/badge";
+import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
+import { Label } from "../ui/label";
+import { Progress } from "../ui/progress";
+import { Alert } from "../ui/alert";
+import { Assignment, StudentAssignment, Question } from "../../types";
+import {
+  ArrowLeft,
+  Clock,
+  CheckCircle,
   XCircle,
   ArrowRight,
   Save,
-  Send
-} from 'lucide-react';
+  Send,
+} from "lucide-react";
 
 interface AssignmentViewProps {
   assignment: Assignment;
@@ -24,7 +24,11 @@ interface AssignmentViewProps {
   onBack: () => void;
 }
 
-export function AssignmentView({ assignment, studentAssignment, onBack }: AssignmentViewProps) {
+export function AssignmentView({
+  assignment,
+  studentAssignment,
+  onBack,
+}: AssignmentViewProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<{ [questionId: string]: number }>({});
   const [timeLeft, setTimeLeft] = useState(3600); // 1 час
@@ -35,37 +39,39 @@ export function AssignmentView({ assignment, studentAssignment, onBack }: Assign
   useEffect(() => {
     const mockQuestions: Question[] = [
       {
-        id: '1',
-        question: 'Переведите число 1011₂ в десятичную систему счисления:',
-        options: ['9', '11', '13', '15'],
+        id: "1",
+        question: "Переведите число 1011₂ в десятичную систему счисления:",
+        options: ["9", "11", "13", "15"],
         correct_answer: 1,
-        explanation: '1011₂ = 1×2³ + 0×2² + 1×2¹ + 1×2⁰ = 8 + 0 + 2 + 1 = 11',
-        points: 10
+        explanation: "1011₂ = 1×2³ + 0×2² + 1×2¹ + 1×2⁰ = 8 + 0 + 2 + 1 = 11",
+        points: 10,
       },
       {
-        id: '2',
-        question: 'Сколько единиц в двоичной записи числа 15?',
-        options: ['2', '3', '4', '5'],
+        id: "2",
+        question: "Сколько единиц в двоичной записи числа 15?",
+        options: ["2", "3", "4", "5"],
         correct_answer: 2,
-        explanation: '15₁₀ = 1111₂, содержит 4 единицы',
-        points: 10
+        explanation: "15₁₀ = 1111₂, содержит 4 единицы",
+        points: 10,
       },
       {
-        id: '3',
-        question: 'Какое число в шестнадцатеричной системе соответствует числу 255₁₀?',
-        options: ['EF', 'FF', '100', 'FE'],
+        id: "3",
+        question:
+          "Какое число в шестнадцатеричной системе соответствует числу 255₁₀?",
+        options: ["EF", "FF", "100", "FE"],
         correct_answer: 1,
-        explanation: '255₁₀ = FF₁₆',
-        points: 15
+        explanation: "255₁₀ = FF₁₆",
+        points: 15,
       },
       {
-        id: '4',
-        question: 'В какой системе счисления записано число 123, если в десятичной системе оно равно 83?',
-        options: ['7', '8', '9', '12'],
+        id: "4",
+        question:
+          "В какой системе счисления записано число 123, если в десятичной системе оно равно 83?",
+        options: ["7", "8", "9", "12"],
         correct_answer: 1,
-        explanation: '123₈ = 1×8² + 2×8¹ + 3×8⁰ = 64 + 16 + 3 = 83₁₀',
-        points: 20
-      }
+        explanation: "123₈ = 1×8² + 2×8¹ + 3×8⁰ = 64 + 16 + 3 = 83₁₀",
+        points: 20,
+      },
     ];
 
     setQuestions(mockQuestions);
@@ -73,13 +79,13 @@ export function AssignmentView({ assignment, studentAssignment, onBack }: Assign
     // Загружаем сохраненные ответы если задание уже выполнялось
     if (studentAssignment?.answers) {
       const savedAnswers: { [questionId: string]: number } = {};
-      studentAssignment.answers.forEach(answer => {
+      studentAssignment.answers.forEach((answer) => {
         savedAnswers[answer.question_id] = answer.selected_answer;
       });
       setAnswers(savedAnswers);
     }
 
-    if (studentAssignment?.status === 'completed') {
+    if (studentAssignment?.status === "completed") {
       setIsSubmitted(true);
     }
   }, [studentAssignment]);
@@ -88,7 +94,7 @@ export function AssignmentView({ assignment, studentAssignment, onBack }: Assign
   useEffect(() => {
     if (!isSubmitted && timeLeft > 0) {
       const timer = setInterval(() => {
-        setTimeLeft(prev => prev - 1);
+        setTimeLeft((prev) => prev - 1);
       }, 1000);
       return () => clearInterval(timer);
     }
@@ -98,42 +104,49 @@ export function AssignmentView({ assignment, studentAssignment, onBack }: Assign
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    return `${hours.toString().padStart(2, "0")}:${minutes
+      .toString()
+      .padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
   const currentQuestion = questions[currentQuestionIndex];
   const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
 
   const handleAnswerChange = (questionId: string, answer: number) => {
-    setAnswers(prev => ({
+    setAnswers((prev) => ({
       ...prev,
-      [questionId]: answer
+      [questionId]: answer,
     }));
   };
 
   const saveProgress = () => {
     // В реальном приложении здесь будет сохранение в Supabase
-    console.log('Прогресс сохранен:', answers);
+    console.log("Прогресс сохранен:", answers);
   };
 
   const submitAssignment = () => {
     if (timeLeft === 0 || Object.keys(answers).length === questions.length) {
       setIsSubmitted(true);
       // В реальном приложении здесь будет отправка в Supabase
-      console.log('Задание отправлено:', answers);
+      console.log("Задание отправлено:", answers);
     }
   };
 
   const getAnswerStatus = (questionId: string) => {
     if (!isSubmitted || !studentAssignment?.answers) return null;
-    
-    const answer = studentAssignment.answers.find(a => a.question_id === questionId);
+
+    const answer = studentAssignment.answers.find(
+      (a) => a.question_id === questionId
+    );
     return answer?.is_correct;
   };
 
   const getTotalScore = () => {
     if (!isSubmitted || !studentAssignment?.answers) return 0;
-    return studentAssignment.answers.reduce((total, answer) => total + answer.points_earned, 0);
+    return studentAssignment.answers.reduce(
+      (total, answer) => total + answer.points_earned,
+      0
+    );
   };
 
   if (questions.length === 0) {
@@ -164,23 +177,30 @@ export function AssignmentView({ assignment, studentAssignment, onBack }: Assign
                 <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                   <Badge variant="outline">{assignment.topic}</Badge>
                   <span>•</span>
-                  <span>Вопрос {currentQuestionIndex + 1} из {questions.length}</span>
+                  <span>
+                    Вопрос {currentQuestionIndex + 1} из {questions.length}
+                  </span>
                 </div>
               </div>
             </div>
-            
+
             <div className="flex items-center space-x-4">
               {!isSubmitted && (
                 <div className="flex items-center space-x-2">
                   <Clock className="w-4 h-4" />
-                  <span className={`font-mono ${timeLeft < 300 ? 'text-red-600' : ''}`}>
+                  <span
+                    className={`font-mono ${
+                      timeLeft < 300 ? "text-red-600" : ""
+                    }`}
+                  >
                     {formatTime(timeLeft)}
                   </span>
                 </div>
               )}
               {isSubmitted && (
                 <Badge className="bg-green-100 text-green-800">
-                  Завершено: {getTotalScore()}/{questions.reduce((sum, q) => sum + q.points, 0)} баллов
+                  Завершено: {getTotalScore()}/
+                  {questions.reduce((sum, q) => sum + q.points, 0)} баллов
                 </Badge>
               )}
             </div>
@@ -193,7 +213,9 @@ export function AssignmentView({ assignment, studentAssignment, onBack }: Assign
         <div className="mb-8">
           <div className="flex justify-between items-center mb-2">
             <span className="text-sm text-muted-foreground">Прогресс</span>
-            <span className="text-sm text-muted-foreground">{Math.round(progress)}%</span>
+            <span className="text-sm text-muted-foreground">
+              {Math.round(progress)}%
+            </span>
           </div>
           <Progress value={progress} className="h-2" />
         </div>
@@ -205,9 +227,7 @@ export function AssignmentView({ assignment, studentAssignment, onBack }: Assign
               <CardTitle className="text-lg">
                 Вопрос {currentQuestionIndex + 1}
               </CardTitle>
-              <Badge variant="outline">
-                {currentQuestion.points} баллов
-              </Badge>
+              <Badge variant="outline">{currentQuestion.points} баллов</Badge>
             </div>
           </CardHeader>
           <CardContent>
@@ -219,8 +239,10 @@ export function AssignmentView({ assignment, studentAssignment, onBack }: Assign
               </div>
 
               <RadioGroup
-                value={answers[currentQuestion.id]?.toString() || ''}
-                onValueChange={(value) => handleAnswerChange(currentQuestion.id, parseInt(value))}
+                value={answers[currentQuestion.id]?.toString() || ""}
+                onValueChange={(value) =>
+                  handleAnswerChange(currentQuestion.id, parseInt(value))
+                }
                 disabled={isSubmitted}
                 className="space-y-3"
               >
@@ -228,20 +250,29 @@ export function AssignmentView({ assignment, studentAssignment, onBack }: Assign
                   const isSelected = answers[currentQuestion.id] === index;
                   const isCorrect = index === currentQuestion.correct_answer;
                   const answerStatus = getAnswerStatus(currentQuestion.id);
-                  
-                  let optionClass = '';
+
+                  let optionClass = "";
                   if (isSubmitted) {
                     if (isCorrect) {
-                      optionClass = 'border-green-500 bg-green-50';
+                      optionClass = "border-green-500 bg-green-50";
                     } else if (isSelected && !isCorrect) {
-                      optionClass = 'border-red-500 bg-red-50';
+                      optionClass = "border-red-500 bg-red-50";
                     }
                   }
 
                   return (
-                    <div key={index} className={`flex items-center space-x-3 p-3 rounded-lg border ${optionClass}`}>
-                      <RadioGroupItem value={index.toString()} id={`option-${index}`} />
-                      <Label htmlFor={`option-${index}`} className="flex-1 cursor-pointer">
+                    <div
+                      key={index}
+                      className={`flex items-center space-x-3 p-3 rounded-lg border ${optionClass}`}
+                    >
+                      <RadioGroupItem
+                        value={index.toString()}
+                        id={`option-${index}`}
+                      />
+                      <Label
+                        htmlFor={`option-${index}`}
+                        className="flex-1 cursor-pointer"
+                      >
                         {option}
                       </Label>
                       {isSubmitted && isCorrect && (
@@ -271,7 +302,9 @@ export function AssignmentView({ assignment, studentAssignment, onBack }: Assign
         <div className="flex justify-between items-center">
           <Button
             variant="outline"
-            onClick={() => setCurrentQuestionIndex(Math.max(0, currentQuestionIndex - 1))}
+            onClick={() =>
+              setCurrentQuestionIndex(Math.max(0, currentQuestionIndex - 1))
+            }
             disabled={currentQuestionIndex === 0}
           >
             Предыдущий вопрос
@@ -287,7 +320,9 @@ export function AssignmentView({ assignment, studentAssignment, onBack }: Assign
 
             {currentQuestionIndex < questions.length - 1 ? (
               <Button
-                onClick={() => setCurrentQuestionIndex(currentQuestionIndex + 1)}
+                onClick={() =>
+                  setCurrentQuestionIndex(currentQuestionIndex + 1)
+                }
               >
                 Следующий вопрос
                 <ArrowRight className="w-4 h-4 ml-2" />
@@ -317,18 +352,20 @@ export function AssignmentView({ assignment, studentAssignment, onBack }: Assign
                 const isCurrent = index === currentQuestionIndex;
                 const answerStatus = getAnswerStatus(questions[index].id);
 
-                let buttonClass = 'w-10 h-10 rounded-lg border-2 text-sm font-medium transition-colors ';
-                
+                let buttonClass =
+                  "w-10 h-10 rounded-lg border-2 text-sm font-medium transition-colors ";
+
                 if (isCurrent) {
-                  buttonClass += 'border-blue-500 bg-blue-100 text-blue-700 ';
+                  buttonClass += "border-blue-500 bg-blue-100 text-blue-700 ";
                 } else if (isSubmitted && answerStatus === true) {
-                  buttonClass += 'border-green-500 bg-green-100 text-green-700 ';
+                  buttonClass +=
+                    "border-green-500 bg-green-100 text-green-700 ";
                 } else if (isSubmitted && answerStatus === false) {
-                  buttonClass += 'border-red-500 bg-red-100 text-red-700 ';
+                  buttonClass += "border-red-500 bg-red-100 text-red-700 ";
                 } else if (isAnswered) {
-                  buttonClass += 'border-gray-400 bg-gray-100 text-gray-700 ';
+                  buttonClass += "border-gray-400 bg-gray-100 text-gray-700 ";
                 } else {
-                  buttonClass += 'border-gray-200 bg-white text-gray-400 ';
+                  buttonClass += "border-gray-200 bg-white text-gray-400 ";
                 }
 
                 return (

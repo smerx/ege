@@ -24,7 +24,12 @@ interface EditAssignmentModalProps {
   onSave: (assignment: Assignment, newImages: File[]) => Promise<void>;
 }
 
-export function EditAssignmentModal({ assignment, isOpen, onClose, onSave }: EditAssignmentModalProps) {
+export function EditAssignmentModal({
+  assignment,
+  isOpen,
+  onClose,
+  onSave,
+}: EditAssignmentModalProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [maxScore, setMaxScore] = useState(100);
@@ -44,16 +49,16 @@ export function EditAssignmentModal({ assignment, isOpen, onClose, onSave }: Edi
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const files = Array.from(e.target.files);
-      setNewImages(prev => [...prev, ...files]);
+      setNewImages((prev) => [...prev, ...files]);
     }
   };
 
   const removeExistingImage = (index: number) => {
-    setExistingImages(prev => prev.filter((_, i) => i !== index));
+    setExistingImages((prev) => prev.filter((_, i) => i !== index));
   };
 
   const removeNewImage = (index: number) => {
-    setNewImages(prev => prev.filter((_, i) => i !== index));
+    setNewImages((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSave = async () => {
@@ -64,7 +69,7 @@ export function EditAssignmentModal({ assignment, isOpen, onClose, onSave }: Edi
       title: title.trim(),
       description: description.trim(),
       max_score: maxScore,
-      image_urls: existingImages
+      image_urls: existingImages,
     };
 
     await onSave(updatedAssignment, newImages);
@@ -85,7 +90,12 @@ export function EditAssignmentModal({ assignment, isOpen, onClose, onSave }: Edi
 
         <div className="space-y-6">
           <div>
-            <Label htmlFor="edit-title" className="text-sm font-medium mb-2 block">Название задания *</Label>
+            <Label
+              htmlFor="edit-title"
+              className="text-sm font-medium mb-2 block"
+            >
+              Название задания *
+            </Label>
             <Input
               id="edit-title"
               value={title}
@@ -95,7 +105,12 @@ export function EditAssignmentModal({ assignment, isOpen, onClose, onSave }: Edi
           </div>
 
           <div>
-            <Label htmlFor="edit-description" className="text-sm font-medium mb-2 block">Описание</Label>
+            <Label
+              htmlFor="edit-description"
+              className="text-sm font-medium mb-2 block"
+            >
+              Описание
+            </Label>
             <Textarea
               id="edit-description"
               value={description}
@@ -106,7 +121,12 @@ export function EditAssignmentModal({ assignment, isOpen, onClose, onSave }: Edi
           </div>
 
           <div>
-            <Label htmlFor="edit-max-score" className="text-sm font-medium mb-2 block">Максимальный балл</Label>
+            <Label
+              htmlFor="edit-max-score"
+              className="text-sm font-medium mb-2 block"
+            >
+              Максимальный балл
+            </Label>
             <Input
               id="edit-max-score"
               type="number"
@@ -120,7 +140,9 @@ export function EditAssignmentModal({ assignment, isOpen, onClose, onSave }: Edi
           {/* Существующие изображения */}
           {existingImages.length > 0 && (
             <div>
-              <Label className="text-sm font-medium mb-3 block">Текущие изображения</Label>
+              <Label className="text-sm font-medium mb-3 block">
+                Текущие изображения
+              </Label>
               <div className="grid grid-cols-2 gap-4">
                 {existingImages.map((url, index) => (
                   <div key={index} className="relative">
@@ -145,7 +167,12 @@ export function EditAssignmentModal({ assignment, isOpen, onClose, onSave }: Edi
 
           {/* Новые изображения */}
           <div>
-            <Label htmlFor="edit-images" className="text-sm font-medium mb-3 block">Добавить новые изображения</Label>
+            <Label
+              htmlFor="edit-images"
+              className="text-sm font-medium mb-3 block"
+            >
+              Добавить новые изображения
+            </Label>
             <div className="flex items-center gap-4">
               <Input
                 id="edit-images"
@@ -155,12 +182,15 @@ export function EditAssignmentModal({ assignment, isOpen, onClose, onSave }: Edi
                 onChange={handleImageChange}
                 className="flex-1"
               />
-              <Button variant="outline" onClick={() => document.getElementById('edit-images')?.click()}>
+              <Button
+                variant="outline"
+                onClick={() => document.getElementById("edit-images")?.click()}
+              >
                 <Upload className="w-4 h-4 mr-2" />
                 Выбрать
               </Button>
             </div>
-            
+
             {newImages.length > 0 && (
               <div className="grid grid-cols-2 gap-4 mt-4">
                 {newImages.map((file, index) => (

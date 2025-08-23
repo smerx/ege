@@ -75,30 +75,30 @@ export function ImagePreview({
             <div className="flex items-center justify-between text-white">
               <div className="flex items-center space-x-4">
                 {title && (
-                  <h3 
+                  <h3
                     className="text-sm font-medium truncate max-w-xs"
                     style={{
-                      color: 'white',
-                      textShadow: '1px 1px 3px rgba(0, 0, 0, 0.8)',
-                      backgroundColor: 'rgba(0, 0, 0, 0.6)',
-                      padding: '4px 8px',
-                      borderRadius: '4px',
-                      backdropFilter: 'blur(4px)',
+                      color: "white",
+                      textShadow: "1px 1px 3px rgba(0, 0, 0, 0.8)",
+                      backgroundColor: "rgba(0, 0, 0, 0.6)",
+                      padding: "4px 8px",
+                      borderRadius: "4px",
+                      backdropFilter: "blur(4px)",
                     }}
                   >
                     {title}
                   </h3>
                 )}
                 {images.length > 1 && (
-                  <span 
+                  <span
                     className="text-xs opacity-90"
                     style={{
-                      color: 'white',
-                      textShadow: '1px 1px 2px rgba(0, 0, 0, 0.8)',
-                      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                      padding: '2px 6px',
-                      borderRadius: '3px',
-                      backdropFilter: 'blur(4px)',
+                      color: "white",
+                      textShadow: "1px 1px 2px rgba(0, 0, 0, 0.8)",
+                      backgroundColor: "rgba(0, 0, 0, 0.5)",
+                      padding: "2px 6px",
+                      borderRadius: "3px",
+                      backdropFilter: "blur(4px)",
                     }}
                   >
                     {currentIndex + 1} / {images.length}
@@ -115,51 +115,55 @@ export function ImagePreview({
                     onClick={zoomOut}
                     disabled={zoom <= 0.5}
                     style={{
-                      backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                      color: 'white',
-                      border: '1px solid rgba(255, 255, 255, 0.25)',
-                      borderRadius: '50%',
-                      width: '28px',
-                      height: '28px',
-                      padding: '0',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      transition: 'all 0.2s ease',
-                      opacity: zoom <= 0.5 ? '0.5' : '1',
-                      cursor: zoom <= 0.5 ? 'not-allowed' : 'pointer',
+                      backgroundColor: "rgba(0, 0, 0, 0.8)",
+                      color: "white",
+                      border: "1px solid rgba(255, 255, 255, 0.25)",
+                      borderRadius: "50%",
+                      width: "28px",
+                      height: "28px",
+                      padding: "0",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      transition: "all 0.2s ease",
+                      opacity: zoom <= 0.5 ? "0.5" : "1",
+                      cursor: zoom <= 0.5 ? "not-allowed" : "pointer",
                     }}
                     onMouseEnter={(e) => {
                       if (zoom > 0.5) {
-                        e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.9)';
-                        e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.6)';
+                        e.currentTarget.style.backgroundColor =
+                          "rgba(59, 130, 246, 0.9)";
+                        e.currentTarget.style.borderColor =
+                          "rgba(255, 255, 255, 0.6)";
                       }
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
-                      e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.25)';
+                      e.currentTarget.style.backgroundColor =
+                        "rgba(0, 0, 0, 0.8)";
+                      e.currentTarget.style.borderColor =
+                        "rgba(255, 255, 255, 0.25)";
                     }}
                   >
-                    <ZoomOut 
+                    <ZoomOut
                       style={{
-                        width: '12px',
-                        height: '12px',
-                        color: 'white',
-                        filter: 'drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.8))',
+                        width: "12px",
+                        height: "12px",
+                        color: "white",
+                        filter: "drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.8))",
                       }}
                     />
                   </Button>
 
-                  <span 
+                  <span
                     style={{
-                      fontSize: '14px',
-                      padding: '6px 12px',
-                      color: 'white',
-                      backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                      borderRadius: '6px',
-                      border: '1px solid rgba(255, 255, 255, 0.3)',
-                      minWidth: '50px',
-                      textAlign: 'center',
+                      fontSize: "14px",
+                      padding: "6px 12px",
+                      color: "white",
+                      backgroundColor: "rgba(0, 0, 0, 0.8)",
+                      borderRadius: "6px",
+                      border: "1px solid rgba(255, 255, 255, 0.3)",
+                      minWidth: "50px",
+                      textAlign: "center",
                     }}
                   >
                     {Math.round(zoom * 100)}%
@@ -171,37 +175,41 @@ export function ImagePreview({
                     onClick={zoomIn}
                     disabled={zoom >= 3}
                     style={{
-                      backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                      color: 'white',
-                      border: '1px solid rgba(255, 255, 255, 0.25)',
-                      borderRadius: '50%',
-                      width: '28px',
-                      height: '28px',
-                      padding: '0',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      transition: 'all 0.2s ease',
-                      opacity: zoom >= 3 ? '0.5' : '1',
-                      cursor: zoom >= 3 ? 'not-allowed' : 'pointer',
+                      backgroundColor: "rgba(0, 0, 0, 0.8)",
+                      color: "white",
+                      border: "1px solid rgba(255, 255, 255, 0.25)",
+                      borderRadius: "50%",
+                      width: "28px",
+                      height: "28px",
+                      padding: "0",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      transition: "all 0.2s ease",
+                      opacity: zoom >= 3 ? "0.5" : "1",
+                      cursor: zoom >= 3 ? "not-allowed" : "pointer",
                     }}
                     onMouseEnter={(e) => {
                       if (zoom < 3) {
-                        e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.9)';
-                        e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.6)';
+                        e.currentTarget.style.backgroundColor =
+                          "rgba(59, 130, 246, 0.9)";
+                        e.currentTarget.style.borderColor =
+                          "rgba(255, 255, 255, 0.6)";
                       }
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
-                      e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.25)';
+                      e.currentTarget.style.backgroundColor =
+                        "rgba(0, 0, 0, 0.8)";
+                      e.currentTarget.style.borderColor =
+                        "rgba(255, 255, 255, 0.25)";
                     }}
                   >
-                    <ZoomIn 
+                    <ZoomIn
                       style={{
-                        width: '12px',
-                        height: '12px',
-                        color: 'white',
-                        filter: 'drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.8))',
+                        width: "12px",
+                        height: "12px",
+                        color: "white",
+                        filter: "drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.8))",
                       }}
                     />
                   </Button>
@@ -211,35 +219,39 @@ export function ImagePreview({
                     size="sm"
                     onClick={downloadImage}
                     style={{
-                      backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                      color: 'white',
-                      border: '1px solid rgba(255, 255, 255, 0.25)',
-                      borderRadius: '50%',
-                      width: '28px',
-                      height: '28px',
-                      padding: '0',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      transition: 'all 0.2s ease',
+                      backgroundColor: "rgba(0, 0, 0, 0.8)",
+                      color: "white",
+                      border: "1px solid rgba(255, 255, 255, 0.25)",
+                      borderRadius: "50%",
+                      width: "28px",
+                      height: "28px",
+                      padding: "0",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      transition: "all 0.2s ease",
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = 'rgba(34, 197, 94, 0.9)';
-                      e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.6)';
-                      e.currentTarget.style.transform = 'scale(1.05)';
+                      e.currentTarget.style.backgroundColor =
+                        "rgba(34, 197, 94, 0.9)";
+                      e.currentTarget.style.borderColor =
+                        "rgba(255, 255, 255, 0.6)";
+                      e.currentTarget.style.transform = "scale(1.05)";
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
-                      e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.25)';
-                      e.currentTarget.style.transform = 'scale(1)';
+                      e.currentTarget.style.backgroundColor =
+                        "rgba(0, 0, 0, 0.8)";
+                      e.currentTarget.style.borderColor =
+                        "rgba(255, 255, 255, 0.25)";
+                      e.currentTarget.style.transform = "scale(1)";
                     }}
                   >
-                    <Download 
+                    <Download
                       style={{
-                        width: '12px',
-                        height: '12px',
-                        color: 'white',
-                        filter: 'drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.8))',
+                        width: "12px",
+                        height: "12px",
+                        color: "white",
+                        filter: "drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.8))",
                       }}
                     />
                   </Button>
@@ -250,35 +262,39 @@ export function ImagePreview({
                   size="sm"
                   onClick={onClose}
                   style={{
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    color: 'white',
-                    border: '1px solid rgba(255, 255, 255, 0.3)',
-                    borderRadius: '50%',
-                    width: '32px',
-                    height: '32px',
-                    padding: '0',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    transition: 'all 0.2s ease',
+                    backgroundColor: "rgba(0, 0, 0, 0.8)",
+                    color: "white",
+                    border: "1px solid rgba(255, 255, 255, 0.3)",
+                    borderRadius: "50%",
+                    width: "32px",
+                    height: "32px",
+                    padding: "0",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    transition: "all 0.2s ease",
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = 'rgba(220, 20, 20, 0.9)';
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.7)';
-                    e.currentTarget.style.transform = 'scale(1.1)';
+                    e.currentTarget.style.backgroundColor =
+                      "rgba(220, 20, 20, 0.9)";
+                    e.currentTarget.style.borderColor =
+                      "rgba(255, 255, 255, 0.7)";
+                    e.currentTarget.style.transform = "scale(1.1)";
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)';
-                    e.currentTarget.style.transform = 'scale(1)';
+                    e.currentTarget.style.backgroundColor =
+                      "rgba(0, 0, 0, 0.8)";
+                    e.currentTarget.style.borderColor =
+                      "rgba(255, 255, 255, 0.3)";
+                    e.currentTarget.style.transform = "scale(1)";
                   }}
                 >
-                  <X 
+                  <X
                     style={{
-                      width: '14px',
-                      height: '14px',
-                      color: 'white',
-                      filter: 'drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.8))',
+                      width: "14px",
+                      height: "14px",
+                      color: "white",
+                      filter: "drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.8))",
                     }}
                   />
                 </Button>
@@ -297,44 +313,53 @@ export function ImagePreview({
                   size="lg"
                   onClick={prevImage}
                   style={{
-                    position: 'absolute',
-                    left: '8px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
+                    position: "absolute",
+                    left: "8px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
                     zIndex: 20,
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    color: 'white',
-                    border: '1px solid rgba(255, 255, 255, 0.8)',
-                    borderRadius: '50%',
-                    width: '32px',
-                    height: '32px',
-                    padding: '0',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backdropFilter: 'blur(8px)',
-                    boxShadow: '0 0 20px rgba(0, 0, 0, 0.8), inset 0 0 10px rgba(255, 255, 255, 0.1)',
-                    transition: 'all 0.2s ease',
+                    backgroundColor: "rgba(0, 0, 0, 0.8)",
+                    color: "white",
+                    border: "1px solid rgba(255, 255, 255, 0.8)",
+                    borderRadius: "50%",
+                    width: "32px",
+                    height: "32px",
+                    padding: "0",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backdropFilter: "blur(8px)",
+                    boxShadow:
+                      "0 0 20px rgba(0, 0, 0, 0.8), inset 0 0 10px rgba(255, 255, 255, 0.1)",
+                    transition: "all 0.2s ease",
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.9)';
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 1)';
-                    e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)';
-                    e.currentTarget.style.boxShadow = '0 0 30px rgba(0, 0, 0, 0.9), inset 0 0 15px rgba(255, 255, 255, 0.2)';
+                    e.currentTarget.style.backgroundColor =
+                      "rgba(0, 0, 0, 0.9)";
+                    e.currentTarget.style.borderColor =
+                      "rgba(255, 255, 255, 1)";
+                    e.currentTarget.style.transform =
+                      "translateY(-50%) scale(1.1)";
+                    e.currentTarget.style.boxShadow =
+                      "0 0 30px rgba(0, 0, 0, 0.9), inset 0 0 15px rgba(255, 255, 255, 0.2)";
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.8)';
-                    e.currentTarget.style.transform = 'translateY(-50%) scale(1)';
-                    e.currentTarget.style.boxShadow = '0 0 20px rgba(0, 0, 0, 0.8), inset 0 0 10px rgba(255, 255, 255, 0.1)';
+                    e.currentTarget.style.backgroundColor =
+                      "rgba(0, 0, 0, 0.8)";
+                    e.currentTarget.style.borderColor =
+                      "rgba(255, 255, 255, 0.8)";
+                    e.currentTarget.style.transform =
+                      "translateY(-50%) scale(1)";
+                    e.currentTarget.style.boxShadow =
+                      "0 0 20px rgba(0, 0, 0, 0.8), inset 0 0 10px rgba(255, 255, 255, 0.1)";
                   }}
                 >
-                  <ChevronLeft 
+                  <ChevronLeft
                     style={{
-                      width: '16px',
-                      height: '16px',
-                      color: 'white',
-                      filter: 'drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.8))',
+                      width: "16px",
+                      height: "16px",
+                      color: "white",
+                      filter: "drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.8))",
                     }}
                   />
                 </Button>
@@ -345,44 +370,53 @@ export function ImagePreview({
                   size="lg"
                   onClick={nextImage}
                   style={{
-                    position: 'absolute',
-                    right: '8px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
+                    position: "absolute",
+                    right: "8px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
                     zIndex: 20,
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    color: 'white',
-                    border: '1px solid rgba(255, 255, 255, 0.8)',
-                    borderRadius: '50%',
-                    width: '32px',
-                    height: '32px',
-                    padding: '0',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backdropFilter: 'blur(8px)',
-                    boxShadow: '0 0 20px rgba(0, 0, 0, 0.8), inset 0 0 10px rgba(255, 255, 255, 0.1)',
-                    transition: 'all 0.2s ease',
+                    backgroundColor: "rgba(0, 0, 0, 0.8)",
+                    color: "white",
+                    border: "1px solid rgba(255, 255, 255, 0.8)",
+                    borderRadius: "50%",
+                    width: "32px",
+                    height: "32px",
+                    padding: "0",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backdropFilter: "blur(8px)",
+                    boxShadow:
+                      "0 0 20px rgba(0, 0, 0, 0.8), inset 0 0 10px rgba(255, 255, 255, 0.1)",
+                    transition: "all 0.2s ease",
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.9)';
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 1)';
-                    e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)';
-                    e.currentTarget.style.boxShadow = '0 0 30px rgba(0, 0, 0, 0.9), inset 0 0 15px rgba(255, 255, 255, 0.2)';
+                    e.currentTarget.style.backgroundColor =
+                      "rgba(0, 0, 0, 0.9)";
+                    e.currentTarget.style.borderColor =
+                      "rgba(255, 255, 255, 1)";
+                    e.currentTarget.style.transform =
+                      "translateY(-50%) scale(1.1)";
+                    e.currentTarget.style.boxShadow =
+                      "0 0 30px rgba(0, 0, 0, 0.9), inset 0 0 15px rgba(255, 255, 255, 0.2)";
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.8)';
-                    e.currentTarget.style.transform = 'translateY(-50%) scale(1)';
-                    e.currentTarget.style.boxShadow = '0 0 20px rgba(0, 0, 0, 0.8), inset 0 0 10px rgba(255, 255, 255, 0.1)';
+                    e.currentTarget.style.backgroundColor =
+                      "rgba(0, 0, 0, 0.8)";
+                    e.currentTarget.style.borderColor =
+                      "rgba(255, 255, 255, 0.8)";
+                    e.currentTarget.style.transform =
+                      "translateY(-50%) scale(1)";
+                    e.currentTarget.style.boxShadow =
+                      "0 0 20px rgba(0, 0, 0, 0.8), inset 0 0 10px rgba(255, 255, 255, 0.1)";
                   }}
                 >
-                  <ChevronRight 
+                  <ChevronRight
                     style={{
-                      width: '16px',
-                      height: '16px',
-                      color: 'white',
-                      filter: 'drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.8))',
+                      width: "16px",
+                      height: "16px",
+                      color: "white",
+                      filter: "drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.8))",
                     }}
                   />
                 </Button>
