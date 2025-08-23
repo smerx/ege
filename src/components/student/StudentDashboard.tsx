@@ -28,6 +28,7 @@ import {
   Award,
   ChevronDown,
   ChevronRight,
+  Lock,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { ImageWithFallback } from "../figma/ImageWithFallback";
@@ -41,6 +42,7 @@ interface Assignment {
   max_score: number;
   image_urls: string[];
   created_at: string;
+  assignment_access?: { student_id: string }[];
 }
 
 interface TheoryBlock {
@@ -49,6 +51,7 @@ interface TheoryBlock {
   content: string;
   image_urls: string[];
   created_at: string;
+  theory_access?: { student_id: string }[];
 }
 
 interface Submission {
@@ -90,16 +93,22 @@ export function StudentDashboard() {
 
     setLoading(true);
     try {
-      // Load assignments
+      // Load all assignments with optional access info
       const { data: assignmentsData } = await supabase
         .from("assignments")
-        .select("*")
+        .select(`
+          *,
+          assignment_access(student_id)
+        `)
         .order("created_at", { ascending: false });
 
-      // Load theory blocks
+      // Load all theory blocks with optional access info
       const { data: theoryData } = await supabase
         .from("theory_blocks")
-        .select("*")
+        .select(`
+          *,
+          theory_access(student_id)
+        `)
         .order("created_at", { ascending: false });
 
       // Load user's submissions
@@ -180,6 +189,14 @@ export function StudentDashboard() {
       }
       return newSet;
     });
+  };
+
+  const hasAccessToAssignment = (assignment: Assignment & { assignment_access?: { student_id: string }[] }) => {
+    return assignment.assignment_access?.some(access => access.student_id === user?.id) || false;
+  };
+
+  const hasAccessToTheory = (theory: TheoryBlock & { theory_access?: { student_id: string }[] }) => {
+    return theory.theory_access?.some(access => access.student_id === user?.id) || false;
   };
 
   const completedAssignments = submissions.filter(
@@ -300,28 +317,38 @@ export function StudentDashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {assignments.map((assignment) => {
                 const submission = getSubmissionForAssignment(assignment.id);
+                const hasAccess = hasAccessToAssignment(assignment);
 
                 return (
                   <Card
                     key={assignment.id}
-                    className="hover:shadow-lg transition-shadow h-full flex flex-col"
+                    className={`hover:shadow-lg transition-shadow h-full flex flex-col ${!hasAccess ? 'opacity-60' : ''}`}
                   >
                     <CardHeader>
                       <div className="flex justify-between items-start">
-                        <CardTitle className="text-lg">
-                          {assignment.title}
-                        </CardTitle>
+                        <div className="flex items-center gap-2">
+                          <CardTitle className="text-lg">
+                            {assignment.title}
+                          </CardTitle>
+                          {!hasAccess && (
+                            <Lock className="w-4 h-4 text-gray-400" />
+                          )}
+                        </div>
                         <div className="text-right">
                           <Badge
                             variant={
-                              submission?.status === "graded"
+                              !hasAccess
+                                ? "outline"
+                                : submission?.status === "graded"
                                 ? "default"
                                 : submission?.status === "pending"
                                 ? "secondary"
                                 : "outline"
                             }
                           >
-                            {submission?.status === "graded"
+                            {!hasAccess
+                              ? "Заблокировано"
+                              : submission?.status === "graded"
                               ? "Проверено"
                               : submission?.status === "pending"
                               ? "На проверке"
@@ -413,12 +440,14 @@ export function StudentDashboard() {
                             <DialogTrigger asChild>
                               <Button
                                 size="sm"
+                                disabled={!hasAccess}
                                 onClick={() =>
-                                  setSelectedAssignment(assignment)
+                                  hasAccess && setSelectedAssignment(assignment)
                                 }
+                                title={!hasAccess ? "Задание заблокировано" : "Отправить ответ"}
                               >
                                 <Send className="w-4 h-4 mr-2" />
-                                Отправить ответ
+                                {hasAccess ? "Отправить ответ" : "Заблокировано"}
                               </Button>
                             </DialogTrigger>
                             <DialogContent className="sm:max-w-[600px] p-0">
@@ -537,36 +566,43 @@ export function StudentDashboard() {
             <div className="grid grid-cols-1 gap-4">
               {theoryBlocks.map((theory) => {
                 const isExpanded = expandedTheoryBlocks.has(theory.id);
+                const hasAccess = hasAccessToTheory(theory);
                 return (
-                  <Card key={theory.id} className="overflow-hidden">
+                  <Card key={theory.id} className={`overflow-hidden ${!hasAccess ? 'opacity-60' : ''}`}>
                     <CardHeader
-                      className="cursor-pointer hover:bg-gray-50 transition-colors duration-200 pb-3"
-                      onClick={() => toggleTheoryBlock(theory.id)}
+                      className={`cursor-pointer hover:bg-gray-50 transition-colors duration-200 pb-3 ${!hasAccess ? 'cursor-not-allowed' : ''}`}
+                      onClick={() => hasAccess && toggleTheoryBlock(theory.id)}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-3">
                           <BookOpen className="w-5 h-5 text-blue-600 flex-shrink-0" />
                           <div>
-                            <CardTitle className="text-base font-medium text-gray-900">
-                              {theory.title}
-                            </CardTitle>
+                            <div className="flex items-center gap-2">
+                              <CardTitle className="text-base font-medium text-gray-900">
+                                {theory.title}
+                              </CardTitle>
+                              {!hasAccess && (
+                                <Lock className="w-4 h-4 text-gray-400" />
+                              )}
+                            </div>
                             <p className="text-sm text-gray-500 mt-1">
-                              Добавлено:{" "}
-                              {new Date(theory.created_at).toLocaleDateString()}
+                              {!hasAccess ? "Заблокировано" : `Добавлено: ${new Date(theory.created_at).toLocaleDateString()}`}
                             </p>
                           </div>
                         </div>
                         <div className="flex-shrink-0 ml-4">
-                          {isExpanded ? (
+                          {hasAccess && isExpanded ? (
                             <ChevronDown className="w-5 h-5 text-gray-400 transition-transform duration-200" />
-                          ) : (
+                          ) : hasAccess ? (
                             <ChevronRight className="w-5 h-5 text-gray-400 transition-transform duration-200" />
+                          ) : (
+                            <Lock className="w-5 h-5 text-gray-400" />
                           )}
                         </div>
                       </div>
                     </CardHeader>
 
-                    {isExpanded && (
+                    {isExpanded && hasAccess && (
                       <CardContent className="pt-0 pb-4">
                         <div className="border-t border-gray-100 pt-4">
                           <div className="prose prose-sm max-w-none">

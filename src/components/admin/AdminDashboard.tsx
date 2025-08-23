@@ -142,6 +142,13 @@ export function AdminDashboard() {
   );
   const [isEditSubmissionOpen, setIsEditSubmissionOpen] = useState(false);
 
+  // Access control states
+  const [isAccessControlOpen, setIsAccessControlOpen] = useState(false);
+  const [accessControlType, setAccessControlType] = useState<"assignment" | "theory">("assignment");
+  const [selectedContentId, setSelectedContentId] = useState<string>("");
+  const [assignmentAccess, setAssignmentAccess] = useState<Record<string, string[]>>({});
+  const [theoryAccess, setTheoryAccess] = useState<Record<string, string[]>>({});
+
   // Form states
   const [newAssignment, setNewAssignment] = useState({
     title: "",
@@ -204,10 +211,40 @@ export function AdminDashboard() {
         .select("*")
         .order("submitted_at", { ascending: false });
 
+      // Load assignment access
+      const { data: assignmentAccessData } = await supabase
+        .from("assignment_access")
+        .select("assignment_id, student_id");
+
+      // Load theory access
+      const { data: theoryAccessData } = await supabase
+        .from("theory_access")
+        .select("theory_block_id, student_id");
+
       setAssignments(assignmentsData || []);
       setTheoryBlocks(theoryData || []);
       setStudents(studentsData || []);
       setSubmissions(submissionsData || []);
+
+      // Process access data
+      const assignmentAccessMap: Record<string, string[]> = {};
+      (assignmentAccessData || []).forEach(access => {
+        if (!assignmentAccessMap[access.assignment_id]) {
+          assignmentAccessMap[access.assignment_id] = [];
+        }
+        assignmentAccessMap[access.assignment_id].push(access.student_id);
+      });
+
+      const theoryAccessMap: Record<string, string[]> = {};
+      (theoryAccessData || []).forEach(access => {
+        if (!theoryAccessMap[access.theory_block_id]) {
+          theoryAccessMap[access.theory_block_id] = [];
+        }
+        theoryAccessMap[access.theory_block_id].push(access.student_id);
+      });
+
+      setAssignmentAccess(assignmentAccessMap);
+      setTheoryAccess(theoryAccessMap);
     } catch (error) {
       console.error("Error loading data:", error);
       toast.error("Ошибка загрузки данных");
@@ -566,6 +603,152 @@ export function AdminDashboard() {
     }
   };
 
+  const handleToggleAccess = async (contentId: string, studentId: string, type: "assignment" | "theory") => {
+    if (!user) return;
+
+    try {
+      const tableName = type === "assignment" ? "assignment_access" : "theory_access";
+      const columnName = type === "assignment" ? "assignment_id" : "theory_block_id";
+      
+      const accessMap = type === "assignment" ? assignmentAccess : theoryAccess;
+      const currentAccess = accessMap[contentId] || [];
+      const hasAccess = currentAccess.includes(studentId);
+
+      if (hasAccess) {
+        // Remove access
+        const { error } = await supabase
+          .from(tableName)
+          .delete()
+          .eq(columnName, contentId)
+          .eq("student_id", studentId);
+
+        if (error) throw error;
+        
+        // Update local state immediately
+        if (type === "assignment") {
+          setAssignmentAccess(prev => ({
+            ...prev,
+            [contentId]: currentAccess.filter(id => id !== studentId)
+          }));
+        } else {
+          setTheoryAccess(prev => ({
+            ...prev,
+            [contentId]: currentAccess.filter(id => id !== studentId)
+          }));
+        }
+        
+        toast.success("Доступ отозван");
+      } else {
+        // Grant access
+        const { error } = await supabase
+          .from(tableName)
+          .insert({
+            [columnName]: contentId,
+            student_id: studentId,
+            granted_by: user.id,
+          });
+
+        if (error) throw error;
+        
+        // Update local state immediately
+        if (type === "assignment") {
+          setAssignmentAccess(prev => ({
+            ...prev,
+            [contentId]: [...currentAccess, studentId]
+          }));
+        } else {
+          setTheoryAccess(prev => ({
+            ...prev,
+            [contentId]: [...currentAccess, studentId]
+          }));
+        }
+        
+        toast.success("Доступ предоставлен");
+      }
+    } catch (error) {
+      console.error("Error toggling access:", error);
+      toast.error("Ошибка изменения доступа");
+    }
+  };
+
+  const handleBulkToggleAccess = async (contentId: string, studentIds: string[], grant: boolean, type: "assignment" | "theory") => {
+    if (!user) return;
+
+    try {
+      const tableName = type === "assignment" ? "assignment_access" : "theory_access";
+      const columnName = type === "assignment" ? "assignment_id" : "theory_block_id";
+
+      if (grant) {
+        // Grant access to multiple students
+        const accessRecords = studentIds.map(studentId => ({
+          [columnName]: contentId,
+          student_id: studentId,
+          granted_by: user.id,
+        }));
+
+        const { error } = await supabase
+          .from(tableName)
+          .insert(accessRecords);
+
+        if (error) throw error;
+        
+        // Update local state immediately
+        const currentAccess = type === "assignment" ? assignmentAccess[contentId] || [] : theoryAccess[contentId] || [];
+        const newAccess = [...new Set([...currentAccess, ...studentIds])];
+        
+        if (type === "assignment") {
+          setAssignmentAccess(prev => ({
+            ...prev,
+            [contentId]: newAccess
+          }));
+        } else {
+          setTheoryAccess(prev => ({
+            ...prev,
+            [contentId]: newAccess
+          }));
+        }
+        
+        toast.success(`Доступ предоставлен ${studentIds.length} ученикам`);
+      } else {
+        // Remove access from multiple students
+        const { error } = await supabase
+          .from(tableName)
+          .delete()
+          .eq(columnName, contentId)
+          .in("student_id", studentIds);
+
+        if (error) throw error;
+        
+        // Update local state immediately
+        const currentAccess = type === "assignment" ? assignmentAccess[contentId] || [] : theoryAccess[contentId] || [];
+        const newAccess = currentAccess.filter(id => !studentIds.includes(id));
+        
+        if (type === "assignment") {
+          setAssignmentAccess(prev => ({
+            ...prev,
+            [contentId]: newAccess
+          }));
+        } else {
+          setTheoryAccess(prev => ({
+            ...prev,
+            [contentId]: newAccess
+          }));
+        }
+        
+        toast.success(`Доступ отозван у ${studentIds.length} учеников`);
+      }
+    } catch (error) {
+      console.error("Error bulk toggling access:", error);
+      toast.error("Ошибка массового изменения доступа");
+    }
+  };
+
+  const openAccessControl = (contentId: string, type: "assignment" | "theory") => {
+    setSelectedContentId(contentId);
+    setAccessControlType(type);
+    setIsAccessControlOpen(true);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -818,6 +1001,14 @@ export function AdminDashboard() {
                         <Button
                           size="sm"
                           variant="outline"
+                          onClick={() => openAccessControl(assignment.id, "assignment")}
+                          title="Управление доступом"
+                        >
+                          <Users className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
                           onClick={() => handleEditAssignment(assignment)}
                         >
                           <Edit className="w-4 h-4" />
@@ -1011,6 +1202,14 @@ export function AdminDashboard() {
                     <div className="flex justify-between items-start">
                       <CardTitle className="text-lg">{theory.title}</CardTitle>
                       <div className="flex space-x-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openAccessControl(theory.id, "theory")}
+                          title="Управление доступом"
+                        >
+                          <Users className="w-4 h-4" />
+                        </Button>
                         <Button
                           size="sm"
                           variant="outline"
@@ -1782,6 +1981,101 @@ export function AdminDashboard() {
                   Сохранить
                 </Button>
               </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Access Control Dialog */}
+      <Dialog open={isAccessControlOpen} onOpenChange={setIsAccessControlOpen}>
+        <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              Управление доступом - {accessControlType === "assignment" ? "Задание" : "Теория"}
+            </DialogTitle>
+            <DialogDescription>
+              {selectedContentId && (
+                <>
+                  {accessControlType === "assignment" && 
+                    assignments.find(a => a.id === selectedContentId)?.title
+                  }
+                  {accessControlType === "theory" && 
+                    theoryBlocks.find(t => t.id === selectedContentId)?.title
+                  }
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedContentId && (
+            <div className="space-y-4">
+              <div className="flex gap-2 mb-4">
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    const allStudentIds = students.map(s => s.id);
+                    const accessMap = accessControlType === "assignment" ? assignmentAccess : theoryAccess;
+                    const currentAccess = accessMap[selectedContentId] || [];
+                    const studentsWithoutAccess = allStudentIds.filter(id => !currentAccess.includes(id));
+                    
+                    if (studentsWithoutAccess.length > 0) {
+                      handleBulkToggleAccess(selectedContentId, studentsWithoutAccess, true, accessControlType);
+                    }
+                  }}
+                >
+                  Открыть всем
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    const accessMap = accessControlType === "assignment" ? assignmentAccess : theoryAccess;
+                    const currentAccess = accessMap[selectedContentId] || [];
+                    
+                    if (currentAccess.length > 0) {
+                      handleBulkToggleAccess(selectedContentId, currentAccess, false, accessControlType);
+                    }
+                  }}
+                >
+                  Закрыть всем
+                </Button>
+              </div>
+
+              <div className="space-y-2">
+                {students.map((student) => {
+                  const accessMap = accessControlType === "assignment" ? assignmentAccess : theoryAccess;
+                  const hasAccess = (accessMap[selectedContentId] || []).includes(student.id);
+                  
+                  return (
+                    <div key={student.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <div>
+                          <p className="font-medium">
+                            {student.first_name} {student.last_name}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {student.username} • {student.grade || "Не указан"} класс
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <Button
+                        size="sm"
+                        variant={hasAccess ? "default" : "outline"}
+                        onClick={() => handleToggleAccess(selectedContentId, student.id, accessControlType)}
+                      >
+                        {hasAccess ? "Отозвать доступ" : "Предоставить доступ"}
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {students.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  Ученики не найдены
+                </div>
+              )}
             </div>
           )}
         </DialogContent>

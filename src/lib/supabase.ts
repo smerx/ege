@@ -136,6 +136,52 @@ export interface Database {
           status?: "pending" | "graded";
         };
       };
+      assignment_access: {
+        Row: {
+          id: string;
+          assignment_id: string;
+          student_id: string;
+          granted_at: string;
+          granted_by: string;
+        };
+        Insert: {
+          id?: string;
+          assignment_id: string;
+          student_id: string;
+          granted_at?: string;
+          granted_by: string;
+        };
+        Update: {
+          id?: string;
+          assignment_id?: string;
+          student_id?: string;
+          granted_at?: string;
+          granted_by?: string;
+        };
+      };
+      theory_access: {
+        Row: {
+          id: string;
+          theory_block_id: string;
+          student_id: string;
+          granted_at: string;
+          granted_by: string;
+        };
+        Insert: {
+          id?: string;
+          theory_block_id: string;
+          student_id: string;
+          granted_at?: string;
+          granted_by: string;
+        };
+        Update: {
+          id?: string;
+          theory_block_id?: string;
+          student_id?: string;
+          granted_at?: string;
+          granted_by?: string;
+        };
+      };
     };
   };
 }
