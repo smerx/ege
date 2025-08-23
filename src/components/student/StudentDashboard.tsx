@@ -26,6 +26,8 @@ import {
   GraduationCap,
   Send,
   Award,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { ImageWithFallback } from "../figma/ImageWithFallback";
@@ -74,6 +76,9 @@ export function StudentDashboard() {
   const [previewIndex, setPreviewIndex] = useState(0);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [previewTitle, setPreviewTitle] = useState("");
+  const [expandedTheoryBlocks, setExpandedTheoryBlocks] = useState<Set<string>>(
+    new Set()
+  );
 
   useEffect(() => {
     loadData();
@@ -153,11 +158,27 @@ export function StudentDashboard() {
     return submissions.find((s) => s.assignment_id === assignmentId);
   };
 
-  const openImagePreview = (images: string[], index: number = 0, title?: string) => {
+  const openImagePreview = (
+    images: string[],
+    index: number = 0,
+    title?: string
+  ) => {
     setPreviewImages(images);
     setPreviewIndex(index);
     setPreviewTitle(title || "");
     setIsPreviewOpen(true);
+  };
+
+  const toggleTheoryBlock = (blockId: string) => {
+    setExpandedTheoryBlocks((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(blockId)) {
+        newSet.delete(blockId);
+      } else {
+        newSet.add(blockId);
+      }
+      return newSet;
+    });
   };
 
   const completedAssignments = submissions.filter(
@@ -322,9 +343,15 @@ export function StudentDashboard() {
                                 src={url}
                                 alt={`Изображение ${index + 1}`}
                                 className="w-full h-32 sm:h-40 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-all duration-200 shadow-sm hover:shadow-md"
-                                onClick={() => openImagePreview(assignment.image_urls, index, assignment.title)}
+                                onClick={() =>
+                                  openImagePreview(
+                                    assignment.image_urls,
+                                    index,
+                                    assignment.title
+                                  )
+                                }
                                 onError={(e) => {
-                                  console.error('Image loading error:', url);
+                                  console.error("Image loading error:", url);
                                 }}
                               />
                             ))}
@@ -420,7 +447,13 @@ export function StudentDashboard() {
                                                 src={url}
                                                 alt={`Изображение ${index + 1}`}
                                                 className="w-full h-32 sm:h-36 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-all duration-200 shadow-sm hover:shadow-md"
-                                                onClick={() => openImagePreview(assignment.image_urls, index, assignment.title)}
+                                                onClick={() =>
+                                                  openImagePreview(
+                                                    assignment.image_urls,
+                                                    index,
+                                                    assignment.title
+                                                  )
+                                                }
                                               />
                                             )
                                           )}
@@ -479,41 +512,71 @@ export function StudentDashboard() {
               Теоретические материалы
             </h2>
 
-            <div className="grid grid-cols-1 gap-6">
-              {theoryBlocks.map((theory) => (
-                <Card key={theory.id}>
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <BookOpen className="w-5 h-5 mr-2 text-blue-600" />
-                      {theory.title}
-                    </CardTitle>
-                    <p className="text-sm text-gray-500">
-                      Добавлено:{" "}
-                      {new Date(theory.created_at).toLocaleDateString()}
-                    </p>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="prose prose-sm max-w-none">
-                      <div className="whitespace-pre-wrap text-sm leading-relaxed">
-                        {theory.content}
+            <div className="grid grid-cols-1 gap-4">
+              {theoryBlocks.map((theory) => {
+                const isExpanded = expandedTheoryBlocks.has(theory.id);
+                return (
+                  <Card key={theory.id} className="overflow-hidden">
+                    <CardHeader
+                      className="cursor-pointer hover:bg-gray-50 transition-colors duration-200 pb-3"
+                      onClick={() => toggleTheoryBlock(theory.id)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <BookOpen className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                          <div>
+                            <CardTitle className="text-base font-medium text-gray-900">
+                              {theory.title}
+                            </CardTitle>
+                            <p className="text-sm text-gray-500 mt-1">
+                              Добавлено:{" "}
+                              {new Date(theory.created_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex-shrink-0 ml-4">
+                          {isExpanded ? (
+                            <ChevronDown className="w-5 h-5 text-gray-400 transition-transform duration-200" />
+                          ) : (
+                            <ChevronRight className="w-5 h-5 text-gray-400 transition-transform duration-200" />
+                          )}
+                        </div>
                       </div>
-                    </div>
-                    {theory.image_urls.length > 0 && (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
-                        {theory.image_urls.map((img, index) => (
-                          <ImageWithFallback
-                            key={index}
-                            src={img}
-                            alt={`Изображение ${index + 1}`}
-                            className="w-full h-40 sm:h-48 object-cover rounded-lg border cursor-pointer hover:opacity-80 transition-all duration-200 shadow-sm hover:shadow-md"
-                            onClick={() => openImagePreview(theory.image_urls, index, theory.title)}
-                          />
-                        ))}
-                      </div>
+                    </CardHeader>
+
+                    {isExpanded && (
+                      <CardContent className="pt-0 pb-4">
+                        <div className="border-t border-gray-100 pt-4">
+                          <div className="prose prose-sm max-w-none">
+                            <div className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700">
+                              {theory.content}
+                            </div>
+                          </div>
+                          {theory.image_urls.length > 0 && (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
+                              {theory.image_urls.map((img, index) => (
+                                <ImageWithFallback
+                                  key={index}
+                                  src={img}
+                                  alt={`Изображение ${index + 1}`}
+                                  className="w-full h-40 sm:h-48 object-cover rounded-lg border cursor-pointer hover:opacity-80 transition-all duration-200 shadow-sm hover:shadow-md"
+                                  onClick={() =>
+                                    openImagePreview(
+                                      theory.image_urls,
+                                      index,
+                                      theory.title
+                                    )
+                                  }
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
                     )}
-                  </CardContent>
-                </Card>
-              ))}
+                  </Card>
+                );
+              })}
             </div>
           </TabsContent>
 
