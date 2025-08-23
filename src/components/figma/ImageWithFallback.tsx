@@ -5,23 +5,62 @@ const ERROR_IMG_SRC =
 
 export function ImageWithFallback(props: React.ImgHTMLAttributes<HTMLImageElement>) {
   const [didError, setDidError] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
-  const handleError = () => {
+  const handleError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    console.error('Image loading error:', props.src, e)
     setDidError(true)
+    setIsLoading(false)
+    if (props.onError) {
+      props.onError(e)
+    }
   }
 
-  const { src, alt, style, className, ...rest } = props
+  const handleLoad = () => {
+    setIsLoading(false)
+  }
+
+  const { src, alt, style, className, onError, onLoad, ...rest } = props
+
+  if (!src) {
+    return (
+      <div
+        className={`inline-block bg-gray-100 text-center align-middle ${className ?? ''}`}
+        style={style}
+      >
+        <div className="flex items-center justify-center w-full h-full">
+          <span className="text-gray-400 text-xs">No image</span>
+        </div>
+      </div>
+    )
+  }
 
   return didError ? (
     <div
       className={`inline-block bg-gray-100 text-center align-middle ${className ?? ''}`}
       style={style}
+      title={`Ошибка загрузки: ${src}`}
     >
       <div className="flex items-center justify-center w-full h-full">
         <img src={ERROR_IMG_SRC} alt="Error loading image" {...rest} data-original-url={src} />
       </div>
     </div>
   ) : (
-    <img src={src} alt={alt} className={className} style={style} {...rest} onError={handleError} />
+    <div className="relative">
+      {isLoading && (
+        <div className={`absolute inset-0 bg-gray-100 flex items-center justify-center ${className ?? ''}`}>
+          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400"></div>
+        </div>
+      )}
+      <img 
+        src={src} 
+        alt={alt} 
+        className={className} 
+        style={style} 
+        {...rest} 
+        onError={handleError}
+        onLoad={handleLoad}
+      />
+    </div>
   )
 }

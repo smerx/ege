@@ -15,7 +15,7 @@ import {
   DialogTrigger,
 } from "../ui/dialog";
 import { Textarea } from "../ui/textarea";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 import {
   BookOpen,
   FileText,
@@ -28,6 +28,8 @@ import {
   Award,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import { ImageWithFallback } from "../figma/ImageWithFallback";
+import { ImagePreview } from "../ui/image-preview";
 
 interface Assignment {
   id: string;
@@ -68,6 +70,10 @@ export function StudentDashboard() {
   const [submissionText, setSubmissionText] = useState("");
   const [isSubmitDialogOpen, setIsSubmitDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [previewImages, setPreviewImages] = useState<string[]>([]);
+  const [previewIndex, setPreviewIndex] = useState(0);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [previewTitle, setPreviewTitle] = useState("");
 
   useEffect(() => {
     loadData();
@@ -145,6 +151,13 @@ export function StudentDashboard() {
 
   const getSubmissionForAssignment = (assignmentId: string) => {
     return submissions.find((s) => s.assignment_id === assignmentId);
+  };
+
+  const openImagePreview = (images: string[], index: number = 0, title?: string) => {
+    setPreviewImages(images);
+    setPreviewIndex(index);
+    setPreviewTitle(title || "");
+    setIsPreviewOpen(true);
   };
 
   const completedAssignments = submissions.filter(
@@ -302,13 +315,17 @@ export function StudentDashboard() {
 
                       {assignment.image_urls &&
                         assignment.image_urls.length > 0 && (
-                          <div className="grid grid-cols-2 gap-2 mb-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
                             {assignment.image_urls.map((url, index) => (
-                              <img
+                              <ImageWithFallback
                                 key={index}
                                 src={url}
                                 alt={`Изображение ${index + 1}`}
-                                className="w-full h-20 object-cover rounded"
+                                className="w-full h-32 sm:h-40 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-all duration-200 shadow-sm hover:shadow-md"
+                                onClick={() => openImagePreview(assignment.image_urls, index, assignment.title)}
+                                onError={(e) => {
+                                  console.error('Image loading error:', url);
+                                }}
                               />
                             ))}
                           </div>
@@ -395,14 +412,15 @@ export function StudentDashboard() {
                                     </div>
                                     {assignment.image_urls &&
                                       assignment.image_urls.length > 0 && (
-                                        <div className="grid grid-cols-2 gap-2 mt-3">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
                                           {assignment.image_urls.map(
                                             (url, index) => (
-                                              <img
+                                              <ImageWithFallback
                                                 key={index}
                                                 src={url}
                                                 alt={`Изображение ${index + 1}`}
-                                                className="w-full h-24 object-cover rounded"
+                                                className="w-full h-32 sm:h-36 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-all duration-200 shadow-sm hover:shadow-md"
+                                                onClick={() => openImagePreview(assignment.image_urls, index, assignment.title)}
                                               />
                                             )
                                           )}
@@ -481,13 +499,14 @@ export function StudentDashboard() {
                       </div>
                     </div>
                     {theory.image_urls.length > 0 && (
-                      <div className="grid grid-cols-2 gap-4 mt-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
                         {theory.image_urls.map((img, index) => (
-                          <img
+                          <ImageWithFallback
                             key={index}
                             src={img}
                             alt={`Изображение ${index + 1}`}
-                            className="w-full h-32 object-cover rounded-lg border"
+                            className="w-full h-40 sm:h-48 object-cover rounded-lg border cursor-pointer hover:opacity-80 transition-all duration-200 shadow-sm hover:shadow-md"
+                            onClick={() => openImagePreview(theory.image_urls, index, theory.title)}
                           />
                         ))}
                       </div>
@@ -587,6 +606,15 @@ export function StudentDashboard() {
             </div>
           </TabsContent>
         </Tabs>
+
+        {/* Предпросмотр изображений */}
+        <ImagePreview
+          images={previewImages}
+          initialIndex={previewIndex}
+          isOpen={isPreviewOpen}
+          onClose={() => setIsPreviewOpen(false)}
+          title={previewTitle}
+        />
       </main>
     </div>
   );

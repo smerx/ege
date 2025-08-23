@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { supabase, hashPassword, verifyPassword, initializeDatabase } from '../lib/supabase';
+import { supabase, hashPassword, verifyPassword } from '../lib/supabase';
 
 interface User {
   id: string;
@@ -42,9 +42,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [currentView, setCurrentView] = useState<'home' | 'login' | 'register' | 'student-dashboard' | 'admin-dashboard'>('home');
 
   useEffect(() => {
-    // Initialize database with sample data if needed
-    initializeDatabase().catch(console.error);
-    
     // Check for existing session
     const savedUser = localStorage.getItem('currentUser');
     if (savedUser) {

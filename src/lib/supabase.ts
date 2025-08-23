@@ -7,83 +7,6 @@ const supabaseAnonKey =
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// Универсальный интерфейс для работы с Supabase, повторяющий mock-цепочки
-function selectBuilder(table, columns) {
-  let builder = supabase.from(table).select(columns);
-  const chain = {
-    eq: (column, value) => {
-      builder = builder.eq(column, value);
-      return chain;
-    },
-    or: (queryStr) => {
-      builder = builder.or(queryStr);
-      return chain;
-    },
-    order: (column, options) => {
-      builder = builder.order(column, options);
-      return chain;
-    },
-    limit: (count) => {
-      builder = builder.limit(count);
-      return chain;
-    },
-    single: () => {
-      builder = builder.single();
-      return chain;
-    },
-    then: async (callback) => {
-      const { data, error } = await builder;
-      callback({ data, error });
-      return { data, error };
-    },
-  };
-  return chain;
-}
-
-export const db = {
-  from: (table) => ({
-    select: (columns) => selectBuilder(table, columns),
-    insert: (data) => ({
-      then: async (callback) => {
-        const { data: d, error } = await supabase.from(table).insert(data);
-        callback({ data: d, error });
-        return { data: d, error };
-      },
-    }),
-    update: (data) => ({
-      then: async (callback) => {
-        const { data: d, error } = await supabase.from(table).update(data);
-        callback({ data: d, error });
-        return { data: d, error };
-      },
-    }),
-    delete: () => ({
-      then: async (callback) => {
-        const { data: d, error } = await supabase.from(table).delete();
-        callback({ data: d, error });
-        return { data: d, error };
-      },
-    }),
-    upsert: (data) => ({
-      then: async (callback) => {
-        const { data: d, error } = await supabase.from(table).upsert(data);
-        callback({ data: d, error });
-        return { data: d, error };
-      },
-    }),
-  }),
-  storage: supabase.storage,
-  _wrap: (builder) => {
-    return {
-      then: async (callback) => {
-        const { data, error } = await builder;
-        callback({ data, error });
-        return { data, error };
-      },
-    };
-  },
-};
-
 // Database types for TypeScript
 export interface Database {
   public: {
@@ -231,24 +154,85 @@ export const verifyPassword = async (
   return btoa(password) === hash;
 };
 
+// Функция для конвертации файла в base64
+export const fileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = error => reject(error);
+  });
+};
+
+// Альтернативная функция загрузки через base64 (более простая)
+export const uploadFileAsBase64 = async (
+  file: File
+): Promise<string | null> => {
+  try {
+    console.log('Converting file to base64:', file.name, 'Size:', file.size);
+    
+    // Проверяем размер файла (максимум 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      console.error('File too large:', file.size);
+      return null;
+    }
+    
+    // Проверяем тип файла
+    if (!file.type.startsWith('image/')) {
+      console.error('Not an image file:', file.type);
+      return null;
+    }
+    
+    const base64String = await fileToBase64(file);
+    console.log('File converted to base64 successfully');
+    
+    return base64String;
+  } catch (error) {
+    console.error('Base64 conversion error:', error);
+    return null;
+  }
+};
+
 // Функция для загрузки файла в Supabase Storage
 export const uploadFile = async (
   file: File,
   bucket: string = "images"
 ): Promise<string | null> => {
-  const fileName = `${Date.now()}-${file.name}`;
-  const { data, error } = await supabase.storage
-    .from(bucket)
-    .upload(fileName, file);
-  if (error) return null;
-  const { data: publicUrlData } = supabase.storage
-    .from(bucket)
-    .getPublicUrl(fileName);
-  return publicUrlData?.publicUrl || null;
-};
-
-// Функция-заглушка для совместимости с прежним кодом
-export const initializeDatabase = async () => {
-  // Теперь инициализация не требуется, данные берутся из Supabase
-  return Promise.resolve();
+  try {
+    console.log('Starting file upload:', file.name, 'Size:', file.size);
+    
+    // Сначала пробуем загрузить в Storage
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+    
+    console.log('Generated filename:', fileName);
+    
+    // Загружаем файл в Supabase Storage
+    let { data, error } = await supabase.storage
+      .from(bucket)
+      .upload(fileName, file, {
+        cacheControl: '3600',
+        upsert: true
+      });
+    
+    if (error) {
+      console.error('Storage upload failed:', error);
+      console.log('Falling back to base64...');
+      
+      // Если Storage не работает, используем base64
+      return await uploadFileAsBase64(file);
+    }
+    
+    // Получаем публичный URL
+    const { data: publicUrlData } = supabase.storage
+      .from(bucket)
+      .getPublicUrl(fileName);
+    
+    const publicUrl = publicUrlData?.publicUrl;
+    console.log('File uploaded to storage successfully:', publicUrl);
+    
+    return publicUrl || null;
+  } catch (error) {
+    console.error('Upload function error, trying base64:', error);
+    return await uploadFileAsBase64(file);
+  }
 };

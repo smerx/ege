@@ -12,7 +12,11 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../ui/alert-dialog";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
+import { EditAssignmentModal } from "./EditAssignmentModal";
+import { EditTheoryModal } from "./EditTheoryModal";
+import { ImageWithFallback } from "../figma/ImageWithFallback";
+import { ImagePreview } from "../ui/image-preview";
 import { 
   Plus, 
   BookOpen, 
@@ -86,8 +90,13 @@ export function AdminDashboard() {
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [selectedStudentForPassword, setSelectedStudentForPassword] = useState<Student | null>(null);
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [deleteItem, setDeleteItem] = useState<{type: string, id: string} | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{type: 'assignment' | 'theory' | 'student', id: string} | null>(null);
+
+  // Edit modal states
+  const [isEditAssignmentOpen, setIsEditAssignmentOpen] = useState(false);
+  const [isEditTheoryOpen, setIsEditTheoryOpen] = useState(false);
+  const [editingAssignment, setEditingAssignment] = useState<Assignment | null>(null);
+  const [editingTheory, setEditingTheory] = useState<TheoryBlock | null>(null);
 
   // Form states
   const [newAssignment, setNewAssignment] = useState({
@@ -114,6 +123,10 @@ export function AdminDashboard() {
   });
 
   const [newPassword, setNewPassword] = useState('');
+  const [previewImages, setPreviewImages] = useState<string[]>([]);
+  const [previewIndex, setPreviewIndex] = useState(0);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [previewTitle, setPreviewTitle] = useState("");
 
   useEffect(() => {
     loadData();
@@ -328,20 +341,27 @@ export function AdminDashboard() {
   };
 
   const confirmDelete = async () => {
-    if (!deleteItem) return;
+    if (!deleteConfirm) return;
 
     try {
+      let tableName = '';
+      if (deleteConfirm.type === 'assignment') {
+        tableName = 'assignments';
+      } else if (deleteConfirm.type === 'theory') {
+        tableName = 'theory_blocks';
+      } else if (deleteConfirm.type === 'student') {
+        tableName = 'users';
+      }
+
       const { error } = await supabase
-        .from(deleteItem.type === 'assignment' ? 'assignments' : 
-              deleteItem.type === 'theory' ? 'theory_blocks' : 'users')
+        .from(tableName)
         .delete()
-        .eq('id', deleteItem.id);
+        .eq('id', deleteConfirm.id);
 
       if (error) throw error;
 
       toast.success('Элемент удален');
-      setDeleteConfirmOpen(false);
-      setDeleteItem(null);
+      setDeleteConfirm(null);
       loadData();
     } catch (error) {
       console.error('Error deleting item:', error);
@@ -349,9 +369,8 @@ export function AdminDashboard() {
     }
   };
 
-  const openDeleteConfirm = (type: string, id: string) => {
-    setDeleteItem({ type, id });
-    setDeleteConfirmOpen(true);
+  const openDeleteConfirm = (type: 'assignment' | 'theory' | 'student', id: string) => {
+    setDeleteConfirm({ type, id });
   };
 
   const removeImage = (index: number, type: 'assignment' | 'theory') => {
@@ -368,7 +387,92 @@ export function AdminDashboard() {
     }
   };
 
+  const openImagePreview = (images: string[], index: number = 0, title?: string) => {
+    setPreviewImages(images);
+    setPreviewIndex(index);
+    setPreviewTitle(title || "");
+    setIsPreviewOpen(true);
+  };
+
   const pendingSubmissions = submissions.filter(s => s.status === 'pending');
+
+  // Функции для редактирования
+  const handleEditAssignment = (assignment: Assignment) => {
+    setEditingAssignment(assignment);
+    setIsEditAssignmentOpen(true);
+  };
+
+  const handleEditTheory = (theory: TheoryBlock) => {
+    setEditingTheory(theory);
+    setIsEditTheoryOpen(true);
+  };
+
+  const handleSaveAssignment = async (updatedAssignment: Assignment, newImages: File[]) => {
+    try {
+      // Upload new images
+      const newImageUrls: string[] = [];
+      for (const file of newImages) {
+        const url = await uploadFile(file);
+        if (url) newImageUrls.push(url);
+      }
+
+      // Combine existing and new image URLs
+      const allImageUrls = [...updatedAssignment.image_urls, ...newImageUrls];
+
+      const { error } = await supabase
+        .from('assignments')
+        .update({
+          title: updatedAssignment.title,
+          description: updatedAssignment.description,
+          max_score: updatedAssignment.max_score,
+          image_urls: allImageUrls
+        })
+        .eq('id', updatedAssignment.id);
+
+      if (error) throw error;
+
+      toast.success('Задание обновлено успешно');
+      setIsEditAssignmentOpen(false);
+      setEditingAssignment(null);
+      loadData();
+    } catch (error) {
+      console.error('Error updating assignment:', error);
+      toast.error('Ошибка обновления задания');
+    }
+  };
+
+  const handleSaveTheory = async (updatedTheory: TheoryBlock, newImages: File[]) => {
+    try {
+      // Upload new images
+      const newImageUrls: string[] = [];
+      for (const file of newImages) {
+        const url = await uploadFile(file);
+        if (url) newImageUrls.push(url);
+      }
+
+      // Combine existing and new image URLs
+      const allImageUrls = [...updatedTheory.image_urls, ...newImageUrls];
+
+      const { error } = await supabase
+        .from('theory_blocks')
+        .update({
+          title: updatedTheory.title,
+          content: updatedTheory.content,
+          image_urls: allImageUrls
+        })
+        .eq('id', updatedTheory.id);
+
+      if (error) throw error;
+
+      toast.success('Теория обновлена успешно');
+      setIsEditTheoryOpen(false);
+      setEditingTheory(null);
+      loadData();
+    } catch (error) {
+      console.error('Error updating theory:', error);
+      toast.error('Ошибка обновления теории');
+    }
+  };
 
   if (loading) {
     return (
@@ -393,10 +497,12 @@ export function AdminDashboard() {
                 <p className="text-sm text-gray-600">Дмитрий Андреевич Тепляшин</p>
               </div>
             </div>
-            <Button onClick={logout} variant="outline">
-              <LogOut className="w-4 h-4 mr-2" />
-              Выйти
-            </Button>
+            <div className="flex items-center space-x-4">
+              <Button onClick={logout} variant="outline">
+                <LogOut className="w-4 h-4 mr-2" />
+                Выйти
+              </Button>
+            </div>
           </div>
         </div>
       </header>
@@ -481,7 +587,7 @@ export function AdminDashboard() {
                   </DialogHeader>
                   <div className="space-y-6">
                     <div className="space-y-3">
-                      <Label htmlFor="title">Заголовок задания</Label>
+                      <Label htmlFor="title" className="text-sm font-medium">Заголовок задания</Label>
                       <Input
                         id="title"
                         value={newAssignment.title}
@@ -490,7 +596,7 @@ export function AdminDashboard() {
                       />
                     </div>
                     <div className="space-y-3">
-                      <Label htmlFor="description">Описание задания</Label>
+                      <Label htmlFor="description" className="text-sm font-medium">Описание задания</Label>
                       <Textarea
                         id="description"
                         value={newAssignment.description}
@@ -500,7 +606,7 @@ export function AdminDashboard() {
                       />
                     </div>
                     <div className="space-y-3">
-                      <Label htmlFor="maxScore">Максимальный балл</Label>
+                      <Label htmlFor="maxScore" className="text-sm font-medium">Максимальный балл</Label>
                       <Input
                         id="maxScore"
                         type="number"
@@ -509,7 +615,7 @@ export function AdminDashboard() {
                       />
                     </div>
                     <div className="space-y-3">
-                      <Label htmlFor="images">Изображения (можно выбрать несколько)</Label>
+                      <Label htmlFor="images" className="text-sm font-medium">Изображения (можно выбрать несколько)</Label>
                       <Input
                         id="images"
                         type="file"
@@ -556,7 +662,7 @@ export function AdminDashboard() {
                     <div className="flex justify-between items-start">
                       <CardTitle className="text-lg">{assignment.title}</CardTitle>
                       <div className="flex space-x-1">
-                        <Button size="sm" variant="outline">
+                        <Button size="sm" variant="outline" onClick={() => handleEditAssignment(assignment)}>
                           <Edit className="w-4 h-4" />
                         </Button>
                         <Button 
@@ -572,12 +678,18 @@ export function AdminDashboard() {
                   <CardContent>
                     <p className="text-gray-600 text-sm mb-3 line-clamp-3">{assignment.description}</p>
                     {assignment.image_urls && assignment.image_urls.length > 0 && (
-                      <div className="grid grid-cols-2 gap-2 mb-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                         {assignment.image_urls.slice(0, 2).map((url, index) => (
-                          <img key={index} src={url} alt={`Изображение ${index + 1}`} className="w-full h-20 object-cover rounded" />
+                          <ImageWithFallback 
+                            key={index} 
+                            src={url} 
+                            alt={`Изображение ${index + 1}`} 
+                            className="w-full h-24 sm:h-28 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-all duration-200 shadow-sm hover:shadow-md" 
+                            onClick={() => openImagePreview(assignment.image_urls, index, assignment.title)}
+                          />
                         ))}
                         {assignment.image_urls.length > 2 && (
-                          <div className="bg-gray-100 rounded flex items-center justify-center">
+                          <div className="bg-gray-100 rounded-lg flex items-center justify-center h-24 sm:h-28">
                             <span className="text-xs text-gray-500">+{assignment.image_urls.length - 2}</span>
                           </div>
                         )}
@@ -613,7 +725,7 @@ export function AdminDashboard() {
                   </DialogHeader>
                   <div className="space-y-6">
                     <div className="space-y-3">
-                      <Label htmlFor="theoryTitle">Заголовок</Label>
+                      <Label htmlFor="theoryTitle" className="text-sm font-medium">Заголовок</Label>
                       <Input
                         id="theoryTitle"
                         value={newTheory.title}
@@ -622,7 +734,7 @@ export function AdminDashboard() {
                       />
                     </div>
                     <div className="space-y-3">
-                      <Label htmlFor="theoryContent">Содержание</Label>
+                      <Label htmlFor="theoryContent" className="text-sm font-medium">Содержание</Label>
                       <Textarea
                         id="theoryContent"
                         value={newTheory.content}
@@ -632,7 +744,7 @@ export function AdminDashboard() {
                       />
                     </div>
                     <div className="space-y-3">
-                      <Label htmlFor="theoryImages">Изображения (можно выбрать несколько)</Label>
+                      <Label htmlFor="theoryImages" className="text-sm font-medium">Изображения (можно выбрать несколько)</Label>
                       <Input
                         id="theoryImages"
                         type="file"
@@ -679,7 +791,7 @@ export function AdminDashboard() {
                     <div className="flex justify-between items-start">
                       <CardTitle className="text-lg">{theory.title}</CardTitle>
                       <div className="flex space-x-1">
-                        <Button size="sm" variant="outline">
+                        <Button size="sm" variant="outline" onClick={() => handleEditTheory(theory)}>
                           <Edit className="w-4 h-4" />
                         </Button>
                         <Button 
@@ -695,12 +807,18 @@ export function AdminDashboard() {
                   <CardContent>
                     <p className="text-gray-600 text-sm mb-3 line-clamp-3">{theory.content}</p>
                     {theory.image_urls.length > 0 && (
-                      <div className="grid grid-cols-2 gap-2 mb-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                         {theory.image_urls.slice(0, 2).map((img, index) => (
-                          <img key={index} src={img} alt={`Изображение ${index + 1}`} className="w-full h-20 object-cover rounded" />
+                          <ImageWithFallback 
+                            key={index} 
+                            src={img} 
+                            alt={`Изображение ${index + 1}`} 
+                            className="w-full h-24 sm:h-28 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-all duration-200 shadow-sm hover:shadow-md"
+                            onClick={() => openImagePreview(theory.image_urls, index, theory.title)}
+                          />
                         ))}
                         {theory.image_urls.length > 2 && (
-                          <div className="bg-gray-100 rounded flex items-center justify-center">
+                          <div className="bg-gray-100 rounded-lg flex items-center justify-center h-24 sm:h-28">
                             <span className="text-xs text-gray-500">+{theory.image_urls.length - 2}</span>
                           </div>
                         )}
@@ -868,7 +986,7 @@ export function AdminDashboard() {
                           <Button 
                             size="sm" 
                             variant="outline"
-                            onClick={() => openDeleteConfirm('users', student.id)}
+                            onClick={() => openDeleteConfirm('student', student.id)}
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
@@ -1088,7 +1206,7 @@ export function AdminDashboard() {
       </Dialog>
 
       {/* Delete Confirmation */}
-      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+      <AlertDialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Подтвердите удаление</AlertDialogTitle>
@@ -1102,6 +1220,36 @@ export function AdminDashboard() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Предпросмотр изображений */}
+      <ImagePreview
+        images={previewImages}
+        initialIndex={previewIndex}
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
+        title={previewTitle}
+      />
+
+      {/* Модальные окна редактирования */}
+      <EditAssignmentModal
+        assignment={editingAssignment}
+        isOpen={isEditAssignmentOpen}
+        onClose={() => {
+          setIsEditAssignmentOpen(false);
+          setEditingAssignment(null);
+        }}
+        onSave={handleSaveAssignment}
+      />
+
+      <EditTheoryModal
+        theory={editingTheory}
+        isOpen={isEditTheoryOpen}
+        onClose={() => {
+          setIsEditTheoryOpen(false);
+          setEditingTheory(null);
+        }}
+        onSave={handleSaveTheory}
+      />
     </div>
   );
 }
