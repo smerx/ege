@@ -96,19 +96,23 @@ export function StudentDashboard() {
       // Load all assignments with optional access info
       const { data: assignmentsData } = await supabase
         .from("assignments")
-        .select(`
+        .select(
+          `
           *,
           assignment_access(student_id)
-        `)
+        `
+        )
         .order("created_at", { ascending: false });
 
       // Load all theory blocks with optional access info
       const { data: theoryData } = await supabase
         .from("theory_blocks")
-        .select(`
+        .select(
+          `
           *,
           theory_access(student_id)
-        `)
+        `
+        )
         .order("created_at", { ascending: false });
 
       // Load user's submissions
@@ -191,12 +195,23 @@ export function StudentDashboard() {
     });
   };
 
-  const hasAccessToAssignment = (assignment: Assignment & { assignment_access?: { student_id: string }[] }) => {
-    return assignment.assignment_access?.some(access => access.student_id === user?.id) || false;
+  const hasAccessToAssignment = (
+    assignment: Assignment & { assignment_access?: { student_id: string }[] }
+  ) => {
+    return (
+      assignment.assignment_access?.some(
+        (access) => access.student_id === user?.id
+      ) || false
+    );
   };
 
-  const hasAccessToTheory = (theory: TheoryBlock & { theory_access?: { student_id: string }[] }) => {
-    return theory.theory_access?.some(access => access.student_id === user?.id) || false;
+  const hasAccessToTheory = (
+    theory: TheoryBlock & { theory_access?: { student_id: string }[] }
+  ) => {
+    return (
+      theory.theory_access?.some((access) => access.student_id === user?.id) ||
+      false
+    );
   };
 
   const completedAssignments = submissions.filter(
@@ -322,7 +337,9 @@ export function StudentDashboard() {
                 return (
                   <Card
                     key={assignment.id}
-                    className={`hover:shadow-lg transition-shadow h-full flex flex-col ${!hasAccess ? 'opacity-60' : ''}`}
+                    className={`hover:shadow-lg transition-shadow h-full flex flex-col ${
+                      !hasAccess ? "opacity-60" : ""
+                    }`}
                   >
                     <CardHeader>
                       <div className="flex justify-between items-start">
@@ -444,10 +461,16 @@ export function StudentDashboard() {
                                 onClick={() =>
                                   hasAccess && setSelectedAssignment(assignment)
                                 }
-                                title={!hasAccess ? "Задание заблокировано" : "Отправить ответ"}
+                                title={
+                                  !hasAccess
+                                    ? "Задание заблокировано"
+                                    : "Отправить ответ"
+                                }
                               >
                                 <Send className="w-4 h-4 mr-2" />
-                                {hasAccess ? "Отправить ответ" : "Заблокировано"}
+                                {hasAccess
+                                  ? "Отправить ответ"
+                                  : "Заблокировано"}
                               </Button>
                             </DialogTrigger>
                             <DialogContent className="sm:max-w-[600px] p-0">
@@ -568,9 +591,16 @@ export function StudentDashboard() {
                 const isExpanded = expandedTheoryBlocks.has(theory.id);
                 const hasAccess = hasAccessToTheory(theory);
                 return (
-                  <Card key={theory.id} className={`overflow-hidden ${!hasAccess ? 'opacity-60' : ''}`}>
+                  <Card
+                    key={theory.id}
+                    className={`overflow-hidden ${
+                      !hasAccess ? "opacity-60" : ""
+                    }`}
+                  >
                     <CardHeader
-                      className={`cursor-pointer hover:bg-gray-50 transition-colors duration-200 pb-3 ${!hasAccess ? 'cursor-not-allowed' : ''}`}
+                      className={`cursor-pointer hover:bg-gray-50 transition-colors duration-200 pb-3 ${
+                        !hasAccess ? "cursor-not-allowed" : ""
+                      }`}
                       onClick={() => hasAccess && toggleTheoryBlock(theory.id)}
                     >
                       <div className="flex items-center justify-between">
@@ -586,7 +616,11 @@ export function StudentDashboard() {
                               )}
                             </div>
                             <p className="text-sm text-gray-500 mt-1">
-                              {!hasAccess ? "Заблокировано" : `Добавлено: ${new Date(theory.created_at).toLocaleDateString()}`}
+                              {!hasAccess
+                                ? "Заблокировано"
+                                : `Добавлено: ${new Date(
+                                    theory.created_at
+                                  ).toLocaleDateString()}`}
                             </p>
                           </div>
                         </div>

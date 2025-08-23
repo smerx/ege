@@ -206,7 +206,7 @@ export const fileToBase64 = (file: File): Promise<string> => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = () => resolve(reader.result as string);
-    reader.onerror = error => reject(error);
+    reader.onerror = (error) => reject(error);
   });
 };
 
@@ -215,26 +215,26 @@ export const uploadFileAsBase64 = async (
   file: File
 ): Promise<string | null> => {
   try {
-    console.log('Converting file to base64:', file.name, 'Size:', file.size);
-    
+    console.log("Converting file to base64:", file.name, "Size:", file.size);
+
     // Проверяем размер файла (максимум 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      console.error('File too large:', file.size);
+      console.error("File too large:", file.size);
       return null;
     }
-    
+
     // Проверяем тип файла
-    if (!file.type.startsWith('image/')) {
-      console.error('Not an image file:', file.type);
+    if (!file.type.startsWith("image/")) {
+      console.error("Not an image file:", file.type);
       return null;
     }
-    
+
     const base64String = await fileToBase64(file);
-    console.log('File converted to base64 successfully');
-    
+    console.log("File converted to base64 successfully");
+
     return base64String;
   } catch (error) {
-    console.error('Base64 conversion error:', error);
+    console.error("Base64 conversion error:", error);
     return null;
   }
 };
@@ -245,40 +245,42 @@ export const uploadFile = async (
   bucket: string = "images"
 ): Promise<string | null> => {
   try {
-    console.log('Starting file upload:', file.name, 'Size:', file.size);
-    
+    console.log("Starting file upload:", file.name, "Size:", file.size);
+
     // Сначала пробуем загрузить в Storage
-    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-    
-    console.log('Generated filename:', fileName);
-    
+    const fileName = `${Date.now()}-${Math.random()
+      .toString(36)
+      .substring(7)}-${file.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
+
+    console.log("Generated filename:", fileName);
+
     // Загружаем файл в Supabase Storage
     let { data, error } = await supabase.storage
       .from(bucket)
       .upload(fileName, file, {
-        cacheControl: '3600',
-        upsert: true
+        cacheControl: "3600",
+        upsert: true,
       });
-    
+
     if (error) {
-      console.error('Storage upload failed:', error);
-      console.log('Falling back to base64...');
-      
+      console.error("Storage upload failed:", error);
+      console.log("Falling back to base64...");
+
       // Если Storage не работает, используем base64
       return await uploadFileAsBase64(file);
     }
-    
+
     // Получаем публичный URL
     const { data: publicUrlData } = supabase.storage
       .from(bucket)
       .getPublicUrl(fileName);
-    
+
     const publicUrl = publicUrlData?.publicUrl;
-    console.log('File uploaded to storage successfully:', publicUrl);
-    
+    console.log("File uploaded to storage successfully:", publicUrl);
+
     return publicUrl || null;
   } catch (error) {
-    console.error('Upload function error, trying base64:', error);
+    console.error("Upload function error, trying base64:", error);
     return await uploadFileAsBase64(file);
   }
 };

@@ -144,10 +144,16 @@ export function AdminDashboard() {
 
   // Access control states
   const [isAccessControlOpen, setIsAccessControlOpen] = useState(false);
-  const [accessControlType, setAccessControlType] = useState<"assignment" | "theory">("assignment");
+  const [accessControlType, setAccessControlType] = useState<
+    "assignment" | "theory"
+  >("assignment");
   const [selectedContentId, setSelectedContentId] = useState<string>("");
-  const [assignmentAccess, setAssignmentAccess] = useState<Record<string, string[]>>({});
-  const [theoryAccess, setTheoryAccess] = useState<Record<string, string[]>>({});
+  const [assignmentAccess, setAssignmentAccess] = useState<
+    Record<string, string[]>
+  >({});
+  const [theoryAccess, setTheoryAccess] = useState<Record<string, string[]>>(
+    {}
+  );
 
   // Form states
   const [newAssignment, setNewAssignment] = useState({
@@ -228,7 +234,7 @@ export function AdminDashboard() {
 
       // Process access data
       const assignmentAccessMap: Record<string, string[]> = {};
-      (assignmentAccessData || []).forEach(access => {
+      (assignmentAccessData || []).forEach((access) => {
         if (!assignmentAccessMap[access.assignment_id]) {
           assignmentAccessMap[access.assignment_id] = [];
         }
@@ -236,7 +242,7 @@ export function AdminDashboard() {
       });
 
       const theoryAccessMap: Record<string, string[]> = {};
-      (theoryAccessData || []).forEach(access => {
+      (theoryAccessData || []).forEach((access) => {
         if (!theoryAccessMap[access.theory_block_id]) {
           theoryAccessMap[access.theory_block_id] = [];
         }
@@ -603,13 +609,19 @@ export function AdminDashboard() {
     }
   };
 
-  const handleToggleAccess = async (contentId: string, studentId: string, type: "assignment" | "theory") => {
+  const handleToggleAccess = async (
+    contentId: string,
+    studentId: string,
+    type: "assignment" | "theory"
+  ) => {
     if (!user) return;
 
     try {
-      const tableName = type === "assignment" ? "assignment_access" : "theory_access";
-      const columnName = type === "assignment" ? "assignment_id" : "theory_block_id";
-      
+      const tableName =
+        type === "assignment" ? "assignment_access" : "theory_access";
+      const columnName =
+        type === "assignment" ? "assignment_id" : "theory_block_id";
+
       const accessMap = type === "assignment" ? assignmentAccess : theoryAccess;
       const currentAccess = accessMap[contentId] || [];
       const hasAccess = currentAccess.includes(studentId);
@@ -623,46 +635,44 @@ export function AdminDashboard() {
           .eq("student_id", studentId);
 
         if (error) throw error;
-        
+
         // Update local state immediately
         if (type === "assignment") {
-          setAssignmentAccess(prev => ({
+          setAssignmentAccess((prev) => ({
             ...prev,
-            [contentId]: currentAccess.filter(id => id !== studentId)
+            [contentId]: currentAccess.filter((id) => id !== studentId),
           }));
         } else {
-          setTheoryAccess(prev => ({
+          setTheoryAccess((prev) => ({
             ...prev,
-            [contentId]: currentAccess.filter(id => id !== studentId)
+            [contentId]: currentAccess.filter((id) => id !== studentId),
           }));
         }
-        
+
         toast.success("Доступ отозван");
       } else {
         // Grant access
-        const { error } = await supabase
-          .from(tableName)
-          .insert({
-            [columnName]: contentId,
-            student_id: studentId,
-            granted_by: user.id,
-          });
+        const { error } = await supabase.from(tableName).insert({
+          [columnName]: contentId,
+          student_id: studentId,
+          granted_by: user.id,
+        });
 
         if (error) throw error;
-        
+
         // Update local state immediately
         if (type === "assignment") {
-          setAssignmentAccess(prev => ({
+          setAssignmentAccess((prev) => ({
             ...prev,
-            [contentId]: [...currentAccess, studentId]
+            [contentId]: [...currentAccess, studentId],
           }));
         } else {
-          setTheoryAccess(prev => ({
+          setTheoryAccess((prev) => ({
             ...prev,
-            [contentId]: [...currentAccess, studentId]
+            [contentId]: [...currentAccess, studentId],
           }));
         }
-        
+
         toast.success("Доступ предоставлен");
       }
     } catch (error) {
@@ -671,43 +681,51 @@ export function AdminDashboard() {
     }
   };
 
-  const handleBulkToggleAccess = async (contentId: string, studentIds: string[], grant: boolean, type: "assignment" | "theory") => {
+  const handleBulkToggleAccess = async (
+    contentId: string,
+    studentIds: string[],
+    grant: boolean,
+    type: "assignment" | "theory"
+  ) => {
     if (!user) return;
 
     try {
-      const tableName = type === "assignment" ? "assignment_access" : "theory_access";
-      const columnName = type === "assignment" ? "assignment_id" : "theory_block_id";
+      const tableName =
+        type === "assignment" ? "assignment_access" : "theory_access";
+      const columnName =
+        type === "assignment" ? "assignment_id" : "theory_block_id";
 
       if (grant) {
         // Grant access to multiple students
-        const accessRecords = studentIds.map(studentId => ({
+        const accessRecords = studentIds.map((studentId) => ({
           [columnName]: contentId,
           student_id: studentId,
           granted_by: user.id,
         }));
 
-        const { error } = await supabase
-          .from(tableName)
-          .insert(accessRecords);
+        const { error } = await supabase.from(tableName).insert(accessRecords);
 
         if (error) throw error;
-        
+
         // Update local state immediately
-        const currentAccess = type === "assignment" ? assignmentAccess[contentId] || [] : theoryAccess[contentId] || [];
+        const currentAccess =
+          type === "assignment"
+            ? assignmentAccess[contentId] || []
+            : theoryAccess[contentId] || [];
         const newAccess = [...new Set([...currentAccess, ...studentIds])];
-        
+
         if (type === "assignment") {
-          setAssignmentAccess(prev => ({
+          setAssignmentAccess((prev) => ({
             ...prev,
-            [contentId]: newAccess
+            [contentId]: newAccess,
           }));
         } else {
-          setTheoryAccess(prev => ({
+          setTheoryAccess((prev) => ({
             ...prev,
-            [contentId]: newAccess
+            [contentId]: newAccess,
           }));
         }
-        
+
         toast.success(`Доступ предоставлен ${studentIds.length} ученикам`);
       } else {
         // Remove access from multiple students
@@ -718,23 +736,28 @@ export function AdminDashboard() {
           .in("student_id", studentIds);
 
         if (error) throw error;
-        
+
         // Update local state immediately
-        const currentAccess = type === "assignment" ? assignmentAccess[contentId] || [] : theoryAccess[contentId] || [];
-        const newAccess = currentAccess.filter(id => !studentIds.includes(id));
-        
+        const currentAccess =
+          type === "assignment"
+            ? assignmentAccess[contentId] || []
+            : theoryAccess[contentId] || [];
+        const newAccess = currentAccess.filter(
+          (id) => !studentIds.includes(id)
+        );
+
         if (type === "assignment") {
-          setAssignmentAccess(prev => ({
+          setAssignmentAccess((prev) => ({
             ...prev,
-            [contentId]: newAccess
+            [contentId]: newAccess,
           }));
         } else {
-          setTheoryAccess(prev => ({
+          setTheoryAccess((prev) => ({
             ...prev,
-            [contentId]: newAccess
+            [contentId]: newAccess,
           }));
         }
-        
+
         toast.success(`Доступ отозван у ${studentIds.length} учеников`);
       }
     } catch (error) {
@@ -743,7 +766,10 @@ export function AdminDashboard() {
     }
   };
 
-  const openAccessControl = (contentId: string, type: "assignment" | "theory") => {
+  const openAccessControl = (
+    contentId: string,
+    type: "assignment" | "theory"
+  ) => {
     setSelectedContentId(contentId);
     setAccessControlType(type);
     setIsAccessControlOpen(true);
@@ -1001,7 +1027,9 @@ export function AdminDashboard() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => openAccessControl(assignment.id, "assignment")}
+                          onClick={() =>
+                            openAccessControl(assignment.id, "assignment")
+                          }
                           title="Управление доступом"
                         >
                           <Users className="w-4 h-4" />
@@ -1991,35 +2019,44 @@ export function AdminDashboard() {
         <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              Управление доступом - {accessControlType === "assignment" ? "Задание" : "Теория"}
+              Управление доступом -{" "}
+              {accessControlType === "assignment" ? "Задание" : "Теория"}
             </DialogTitle>
             <DialogDescription>
               {selectedContentId && (
                 <>
-                  {accessControlType === "assignment" && 
-                    assignments.find(a => a.id === selectedContentId)?.title
-                  }
-                  {accessControlType === "theory" && 
-                    theoryBlocks.find(t => t.id === selectedContentId)?.title
-                  }
+                  {accessControlType === "assignment" &&
+                    assignments.find((a) => a.id === selectedContentId)?.title}
+                  {accessControlType === "theory" &&
+                    theoryBlocks.find((t) => t.id === selectedContentId)?.title}
                 </>
               )}
             </DialogDescription>
           </DialogHeader>
-          
+
           {selectedContentId && (
             <div className="space-y-4">
               <div className="flex gap-2 mb-4">
                 <Button
                   size="sm"
                   onClick={() => {
-                    const allStudentIds = students.map(s => s.id);
-                    const accessMap = accessControlType === "assignment" ? assignmentAccess : theoryAccess;
+                    const allStudentIds = students.map((s) => s.id);
+                    const accessMap =
+                      accessControlType === "assignment"
+                        ? assignmentAccess
+                        : theoryAccess;
                     const currentAccess = accessMap[selectedContentId] || [];
-                    const studentsWithoutAccess = allStudentIds.filter(id => !currentAccess.includes(id));
-                    
+                    const studentsWithoutAccess = allStudentIds.filter(
+                      (id) => !currentAccess.includes(id)
+                    );
+
                     if (studentsWithoutAccess.length > 0) {
-                      handleBulkToggleAccess(selectedContentId, studentsWithoutAccess, true, accessControlType);
+                      handleBulkToggleAccess(
+                        selectedContentId,
+                        studentsWithoutAccess,
+                        true,
+                        accessControlType
+                      );
                     }
                   }}
                 >
@@ -2029,11 +2066,19 @@ export function AdminDashboard() {
                   size="sm"
                   variant="outline"
                   onClick={() => {
-                    const accessMap = accessControlType === "assignment" ? assignmentAccess : theoryAccess;
+                    const accessMap =
+                      accessControlType === "assignment"
+                        ? assignmentAccess
+                        : theoryAccess;
                     const currentAccess = accessMap[selectedContentId] || [];
-                    
+
                     if (currentAccess.length > 0) {
-                      handleBulkToggleAccess(selectedContentId, currentAccess, false, accessControlType);
+                      handleBulkToggleAccess(
+                        selectedContentId,
+                        currentAccess,
+                        false,
+                        accessControlType
+                      );
                     }
                   }}
                 >
@@ -2043,26 +2088,41 @@ export function AdminDashboard() {
 
               <div className="space-y-2">
                 {students.map((student) => {
-                  const accessMap = accessControlType === "assignment" ? assignmentAccess : theoryAccess;
-                  const hasAccess = (accessMap[selectedContentId] || []).includes(student.id);
-                  
+                  const accessMap =
+                    accessControlType === "assignment"
+                      ? assignmentAccess
+                      : theoryAccess;
+                  const hasAccess = (
+                    accessMap[selectedContentId] || []
+                  ).includes(student.id);
+
                   return (
-                    <div key={student.id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div
+                      key={student.id}
+                      className="flex items-center justify-between p-3 border rounded-lg"
+                    >
                       <div className="flex items-center space-x-3">
                         <div>
                           <p className="font-medium">
                             {student.first_name} {student.last_name}
                           </p>
                           <p className="text-sm text-gray-500">
-                            {student.username} • {student.grade || "Не указан"} класс
+                            {student.username} • {student.grade || "Не указан"}{" "}
+                            класс
                           </p>
                         </div>
                       </div>
-                      
+
                       <Button
                         size="sm"
                         variant={hasAccess ? "default" : "outline"}
-                        onClick={() => handleToggleAccess(selectedContentId, student.id, accessControlType)}
+                        onClick={() =>
+                          handleToggleAccess(
+                            selectedContentId,
+                            student.id,
+                            accessControlType
+                          )
+                        }
                       >
                         {hasAccess ? "Отозвать доступ" : "Предоставить доступ"}
                       </Button>
