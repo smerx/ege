@@ -226,7 +226,8 @@ export function AdminDashboard() {
   const [newAssignment, setNewAssignment] = useState({
     title: "",
     description: "",
-    maxScore: 100,
+    // store as string for controlled input behavior
+    maxScore: 100 as any,
     images: [] as File[],
   });
 
@@ -515,10 +516,18 @@ export function AdminDashboard() {
         if (url) imageUrls.push(url);
       }
 
+      // Safely parse maxScore from possibly string state
+      const parsedMaxScore =
+        typeof newAssignment.maxScore === "string"
+          ? newAssignment.maxScore.trim() === ""
+            ? 0
+            : parseInt(newAssignment.maxScore, 10) || 0
+          : newAssignment.maxScore || 0;
+
       const { error } = await supabase.from("assignments").insert({
         title: newAssignment.title,
         description: newAssignment.description,
-        max_score: newAssignment.maxScore,
+        max_score: parsedMaxScore,
         image_urls: imageUrls,
         created_by: user?.id || "1",
       });
@@ -529,7 +538,7 @@ export function AdminDashboard() {
       setNewAssignment({
         title: "",
         description: "",
-        maxScore: 100,
+        maxScore: 100 as any,
         images: [],
       });
       setIsCreateAssignmentOpen(false);
@@ -1461,14 +1470,20 @@ export function AdminDashboard() {
                       </Label>
                       <Input
                         id="maxScore"
-                        type="number"
-                        value={newAssignment.maxScore}
-                        onChange={(e) =>
+                        type="text"
+                        value={String(newAssignment.maxScore ?? "")}
+                        onChange={(e) => {
+                          const digitsOnly = e.target.value.replace(/\D/g, "");
+                          const normalized = digitsOnly.replace(
+                            /^0+(?=\d)/,
+                            ""
+                          );
                           setNewAssignment({
                             ...newAssignment,
-                            maxScore: parseInt(e.target.value) || 100,
-                          })
-                        }
+                            maxScore: normalized,
+                          });
+                        }}
+                        placeholder="Напр. 100"
                       />
                     </div>
                     <div className="space-y-3">
@@ -2369,21 +2384,20 @@ export function AdminDashboard() {
                   />
                 </div>
               </div>
-              <div className="space-y-3">
-                <Label htmlFor="editEmail">Email</Label>
-                <Input
-                  id="editEmail"
-                  type="email"
-                  value={editingStudent.email}
-                  onChange={(e) =>
-                    setEditingStudent({
-                      ...editingStudent,
-                      email: e.target.value,
-                    })
-                  }
-                />
-              </div>
               <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-3">
+                  <Label htmlFor="editEmail">E-mail</Label>
+                  <Input
+                    id="editEmail"
+                    value={editingStudent.email}
+                    onChange={(e) =>
+                      setEditingStudent({
+                        ...editingStudent,
+                        email: e.target.value,
+                      })
+                    }
+                  />
+                </div>
                 <div className="space-y-3">
                   <Label htmlFor="editGrade">Класс</Label>
                   <Select
@@ -2402,19 +2416,19 @@ export function AdminDashboard() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-3">
-                  <Label htmlFor="editParentPhone">Телефон родителя</Label>
-                  <Input
-                    id="editParentPhone"
-                    value={editingStudent.parent_phone}
-                    onChange={(e) =>
-                      setEditingStudent({
-                        ...editingStudent,
-                        parent_phone: e.target.value,
-                      })
-                    }
-                  />
-                </div>
+              </div>
+              <div className="space-y-3">
+                <Label htmlFor="editParentPhone">Телефон родителя</Label>
+                <Input
+                  id="editParentPhone"
+                  value={editingStudent.parent_phone}
+                  onChange={(e) =>
+                    setEditingStudent({
+                      ...editingStudent,
+                      parent_phone: e.target.value,
+                    })
+                  }
+                />
               </div>
               <div className="space-y-3">
                 <Label htmlFor="editUsername">Логин</Label>

@@ -32,7 +32,7 @@ export function EditAssignmentModal({
 }: EditAssignmentModalProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [maxScore, setMaxScore] = useState(100);
+  const [maxScoreInput, setMaxScoreInput] = useState<string>("100");
   const [existingImages, setExistingImages] = useState<string[]>([]);
   const [newImages, setNewImages] = useState<File[]>([]);
 
@@ -40,7 +40,9 @@ export function EditAssignmentModal({
     if (assignment) {
       setTitle(assignment.title);
       setDescription(assignment.description);
-      setMaxScore(assignment.max_score);
+      setMaxScoreInput(
+        assignment.max_score === 0 ? "" : String(assignment.max_score)
+      );
       setExistingImages(assignment.image_urls || []);
       setNewImages([]);
     }
@@ -64,11 +66,14 @@ export function EditAssignmentModal({
   const handleSave = async () => {
     if (!assignment || !title.trim()) return;
 
+    const parsedMaxScore =
+      maxScoreInput.trim() === "" ? 0 : parseInt(maxScoreInput, 10) || 0;
+
     const updatedAssignment: Assignment = {
       ...assignment,
       title: title.trim(),
       description: description.trim(),
-      max_score: maxScore,
+      max_score: parsedMaxScore,
       image_urls: existingImages,
     };
 
@@ -129,11 +134,14 @@ export function EditAssignmentModal({
             </Label>
             <Input
               id="edit-max-score"
-              type="number"
-              value={maxScore}
-              onChange={(e) => setMaxScore(Number(e.target.value))}
-              min="1"
-              max="1000"
+              type="text"
+              value={maxScoreInput}
+              onChange={(e) => {
+                const digitsOnly = e.target.value.replace(/\D/g, "");
+                const normalized = digitsOnly.replace(/^0+(?=\d)/, "");
+                setMaxScoreInput(normalized);
+              }}
+              placeholder="Напр. 100"
             />
           </div>
 
