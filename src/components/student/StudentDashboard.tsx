@@ -17,6 +17,7 @@ import {
 import { Textarea } from "../ui/textarea";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
+import { useIsMobile } from "../ui/use-mobile";
 import {
   Select,
   SelectContent,
@@ -78,6 +79,7 @@ interface Submission {
 
 export function StudentDashboard() {
   const { user, logout } = useAuth();
+  const isMobile = useIsMobile();
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [theoryBlocks, setTheoryBlocks] = useState<TheoryBlock[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
@@ -100,6 +102,13 @@ export function StudentDashboard() {
     "all" | "homework" | "classwork"
   >("all");
   const [assignmentSearch, setAssignmentSearch] = useState("");
+
+  // Mobile filter modal states
+  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+  const [tempAssignmentFilter, setTempAssignmentFilter] = useState<
+    "all" | "homework" | "classwork"
+  >("all");
+  const [tempAssignmentSearch, setTempAssignmentSearch] = useState("");
 
   useEffect(() => {
     loadData();
@@ -271,6 +280,24 @@ export function StudentDashboard() {
     return typeMatch && searchMatch;
   });
 
+  // Mobile filter functions
+  const openMobileFilters = () => {
+    setTempAssignmentFilter(assignmentFilter);
+    setTempAssignmentSearch(assignmentSearch);
+    setIsMobileFilterOpen(true);
+  };
+
+  const applyMobileFilters = () => {
+    setAssignmentFilter(tempAssignmentFilter);
+    setAssignmentSearch(tempAssignmentSearch);
+    setIsMobileFilterOpen(false);
+  };
+
+  const resetMobileFilters = () => {
+    setTempAssignmentFilter("all");
+    setTempAssignmentSearch("");
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -375,40 +402,60 @@ export function StudentDashboard() {
 
           {/* Задания */}
           <TabsContent value="assignments" className="space-y-6">
-            <div className="flex items-center justify-end gap-4">
-              {/* Фильтры */}
-              <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between gap-4">
+              {/* Фильтры для десктопа */}
+              {!isMobile && (
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <Filter className="w-4 h-4 text-gray-500" />
+                    <Select
+                      value={assignmentFilter}
+                      onValueChange={(
+                        value: "all" | "homework" | "classwork"
+                      ) => setAssignmentFilter(value)}
+                    >
+                      <SelectTrigger className="w-48">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Все задания</SelectItem>
+                        <SelectItem value="homework">
+                          Домашняя работа
+                        </SelectItem>
+                        <SelectItem value="classwork">
+                          Классная работа
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Search className="w-4 h-4 text-gray-500" />
+                    <Input
+                      placeholder="Поиск по названию..."
+                      value={assignmentSearch}
+                      onChange={(e) => setAssignmentSearch(e.target.value)}
+                      className="w-48"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Кнопка фильтров для мобилки */}
+              {isMobile && (
                 <div className="flex items-center gap-2">
-                  <Filter className="w-4 h-4 text-gray-500" />
-                  <Select
-                    value={assignmentFilter}
-                    onValueChange={(value: "all" | "homework" | "classwork") =>
-                      setAssignmentFilter(value)
-                    }
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={openMobileFilters}
                   >
-                    <SelectTrigger className="w-48">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Все задания</SelectItem>
-                      <SelectItem value="homework">Домашняя работа</SelectItem>
-                      <SelectItem value="classwork">Классная работа</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    <Filter className="w-4 h-4 mr-2" />
+                    Фильтры
+                  </Button>
                 </div>
+              )}
 
-                <div className="flex items-center gap-2">
-                  <Search className="w-4 h-4 text-gray-500" />
-                  <Input
-                    placeholder="Поиск по названию..."
-                    value={assignmentSearch}
-                    onChange={(e) => setAssignmentSearch(e.target.value)}
-                    className="w-48"
-                  />
-                </div>
-              </div>
-
-              {/* Здесь может быть кнопка если понадобится */}
+              {/* Заглушка для выравнивания */}
               <div></div>
             </div>
 
@@ -865,6 +912,55 @@ export function StudentDashboard() {
           onClose={() => setIsPreviewOpen(false)}
           title={previewTitle}
         />
+
+        {/* Модальное окно мобильных фильтров */}
+        <Dialog open={isMobileFilterOpen} onOpenChange={setIsMobileFilterOpen}>
+          <DialogContent className="sm:max-w-[400px]">
+            <DialogHeader>
+              <DialogTitle>Фильтры заданий</DialogTitle>
+              <DialogDescription>
+                Настройте параметры отображения заданий
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="mobileTypeFilter">Тип заданий</Label>
+                <Select
+                  value={tempAssignmentFilter}
+                  onValueChange={(value: "all" | "homework" | "classwork") =>
+                    setTempAssignmentFilter(value)
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Все задания</SelectItem>
+                    <SelectItem value="homework">Домашняя работа</SelectItem>
+                    <SelectItem value="classwork">Классная работа</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="mobileSearchFilter">Поиск по названию</Label>
+                <Input
+                  id="mobileSearchFilter"
+                  placeholder="Введите название..."
+                  value={tempAssignmentSearch}
+                  onChange={(e) => setTempAssignmentSearch(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-between space-x-2 pt-4">
+              <Button variant="outline" onClick={resetMobileFilters}>
+                Сброс
+              </Button>
+              <Button onClick={applyMobileFilters}>Применить</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );
