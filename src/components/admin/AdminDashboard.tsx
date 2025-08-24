@@ -1,7 +1,13 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { supabase, uploadFile, hashPassword } from "../../lib/supabase";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../ui/card";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
@@ -49,6 +55,15 @@ import { ImageWithFallback } from "../figma/ImageWithFallback";
 import { ImagePreview } from "../ui/image-preview";
 import { ContentFormatter } from "../ui/content-formatter";
 import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
+import {
   Plus,
   BookOpen,
   Users,
@@ -66,6 +81,7 @@ import {
   Archive,
   Filter,
   Search,
+  TrendingUp,
 } from "lucide-react";
 
 interface Assignment {
@@ -175,6 +191,16 @@ export function AdminDashboard() {
     {}
   );
 
+  // Student analytics states
+  const [selectedStudentForAnalytics, setSelectedStudentForAnalytics] =
+    useState<string>("");
+  const [studentGradeData, setStudentGradeData] = useState<any[]>([]);
+  const [isAnalyticsLoading, setIsAnalyticsLoading] = useState(false);
+  const [analyticsGroupBy, setAnalyticsGroupBy] = useState<"day" | "month">(
+    "month"
+  );
+  const [isAnalyticsDialogOpen, setIsAnalyticsDialogOpen] = useState(false);
+
   // Form states
   const [newAssignment, setNewAssignment] = useState({
     title: "",
@@ -237,6 +263,23 @@ export function AdminDashboard() {
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    if (selectedStudentForAnalytics) {
+      loadStudentAnalytics(selectedStudentForAnalytics);
+    }
+  }, [selectedStudentForAnalytics, analyticsGroupBy]);
+
+  // Auto-select first student when opening Analytics dialog (helps ensure chart loads)
+  useEffect(() => {
+    if (
+      isAnalyticsDialogOpen &&
+      students.length > 0 &&
+      !selectedStudentForAnalytics
+    ) {
+      setSelectedStudentForAnalytics(students[0].id);
+    }
+  }, [isAnalyticsDialogOpen, students, selectedStudentForAnalytics]);
 
   const loadData = async () => {
     setLoading(true);
@@ -305,6 +348,138 @@ export function AdminDashboard() {
       toast.error("Ошибка загрузки данных");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadStudentAnalytics = async (studentId: string) => {
+    if (!studentId) {
+      setStudentGradeData([]);
+      return;
+    }
+
+    setIsAnalyticsLoading(true);
+    try {
+      // Get all graded submissions for the student
+      const { data: submissionsData, error } = await supabase
+        .from("submissions")
+        .select(
+          `
+          id,
+          score,
+          submitted_at,
+          assignment_id,
+          assignments!inner (
+            title,
+            max_score
+          )
+        `
+        )
+        .eq("student_id", studentId)
+        .eq("status", "graded")
+        .order("submitted_at", { ascending: true });
+
+      if (submissionsData && submissionsData.length > 0) {
+        // If the join didn't work, get assignments separately
+        if (!submissionsData[0].assignments) {
+          const assignmentIds = [
+            ...new Set(submissionsData.map((s) => s.assignment_id)),
+          ];
+          const { data: assignmentsData } = await supabase
+            .from("assignments")
+            .select("id, title, max_score")
+            .in("id", assignmentIds);
+
+          // Add assignment data to submissions
+          submissionsData.forEach((submission: any) => {
+            submission.assignments = assignmentsData?.find(
+              (a) => a.id === submission.assignment_id
+            ) || { max_score: 100 };
+          });
+        }
+
+        // Group submissions by selected period and calculate averages
+        const groupedData: Record<
+          string,
+          { totalScore: number; count: number; submissions: any[] }
+        > = {};
+
+        submissionsData.forEach((submission: any) => {
+          const date = new Date(submission.submitted_at);
+          let groupKey = "";
+
+          if (analyticsGroupBy === "month") {
+            groupKey = `${date.getFullYear()}-${String(
+              date.getMonth() + 1
+            ).padStart(2, "0")}`;
+          } else {
+            groupKey = `${date.getFullYear()}-${String(
+              date.getMonth() + 1
+            ).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+          }
+
+          if (!groupedData[groupKey]) {
+            groupedData[groupKey] = {
+              totalScore: 0,
+              count: 0,
+              submissions: [],
+            };
+          }
+
+          // Calculate percentage score
+          const percentage =
+            (submission.score / submission.assignments.max_score) * 100;
+          groupedData[groupKey].totalScore += percentage;
+          groupedData[groupKey].count += 1;
+          groupedData[groupKey].submissions.push(submission);
+        });
+
+        // Convert to chart data
+        const chartData = Object.entries(groupedData)
+          .map(([period, data]) => {
+            // ensure numeric value for Recharts
+            const averageScore = Number(
+              Math.round(data.totalScore / data.count)
+            );
+            return {
+              period:
+                analyticsGroupBy === "month"
+                  ? new Date(period + "-01").toLocaleDateString("ru-RU", {
+                      month: "short",
+                      year: "2-digit",
+                    })
+                  : new Date(period).toLocaleDateString("ru-RU", {
+                      day: "2-digit",
+                      month: "2-digit",
+                    }),
+              fullPeriod:
+                analyticsGroupBy === "month"
+                  ? new Date(period + "-01").toLocaleDateString("ru-RU", {
+                      year: "numeric",
+                      month: "long",
+                    })
+                  : new Date(period).toLocaleDateString("ru-RU", {
+                      day: "2-digit",
+                      month: "long",
+                      year: "numeric",
+                    }),
+              averageScore,
+              submissionsCount: data.count,
+              sortKey: period,
+            };
+          })
+          .sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+
+        setStudentGradeData(chartData);
+      } else {
+        // Нет реальных данных — очищаем набор точек и показываем сообщение в UI
+        setStudentGradeData([]);
+      }
+    } catch (error) {
+      console.error("Error loading student analytics:", error);
+      toast.error("Ошибка загрузки аналитики");
+      setStudentGradeData([]);
+    } finally {
+      setIsAnalyticsLoading(false);
     }
   };
 
@@ -1785,21 +1960,32 @@ export function AdminDashboard() {
                 </div>
               )}
 
-              {/* Кнопка архива */}
-              <Button
-                variant="outline"
-                onClick={() => setShowArchive(!showArchive)}
-                className="shrink-0"
-              >
-                <Archive className="w-4 h-4 mr-2" />
-                {isLargeScreen
-                  ? showArchive
-                    ? "К проверке"
-                    : "Архив"
-                  : showArchive
-                  ? "Проверка"
-                  : "Архив"}
-              </Button>
+              {/* Кнопки управления */}
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsAnalyticsDialogOpen(true)}
+                  className="shrink-0"
+                >
+                  <TrendingUp className="w-4 h-4 mr-2" />
+                  {isLargeScreen ? "Аналитика" : ""}
+                </Button>
+
+                <Button
+                  variant="outline"
+                  onClick={() => setShowArchive(!showArchive)}
+                  className="shrink-0"
+                >
+                  <Archive className="w-4 h-4 mr-2" />
+                  {isLargeScreen
+                    ? showArchive
+                      ? "К проверке"
+                      : "Архив"
+                    : showArchive
+                    ? "Проверка"
+                    : "Архив"}
+                </Button>
+              </div>
             </div>
 
             <div className="space-y-4">
@@ -2398,6 +2584,239 @@ export function AdminDashboard() {
               )}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Analytics Dialog */}
+      <Dialog
+        open={isAnalyticsDialogOpen}
+        onOpenChange={setIsAnalyticsDialogOpen}
+      >
+        <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-blue-600" />
+              Аналитика успеваемости
+            </DialogTitle>
+            <DialogDescription>
+              Просмотр графика среднего балла ученика для отчётов родителям
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="w-full">
+                <Label htmlFor="student-select">Ученик</Label>
+                <Select
+                  value={selectedStudentForAnalytics}
+                  onValueChange={setSelectedStudentForAnalytics}
+                >
+                  <SelectTrigger id="student-select">
+                    <SelectValue placeholder="Выберите ученика..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {students.map((student) => (
+                      <SelectItem key={student.id} value={student.id}>
+                        {student.last_name} {student.first_name}
+                        {student.grade && ` (${student.grade} класс)`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="w-full">
+                <Label htmlFor="period-select">Группировка по</Label>
+                <Select
+                  value={analyticsGroupBy}
+                  onValueChange={(value: "day" | "month") =>
+                    setAnalyticsGroupBy(value)
+                  }
+                >
+                  <SelectTrigger id="period-select">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="month">Месяцам</SelectItem>
+                    <SelectItem value="day">Дням</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {selectedStudentForAnalytics && (
+              <div className="space-y-6">
+                <div className="text-center">
+                  <h3 className="text-lg font-semibold">
+                    График успеваемости -{" "}
+                    {
+                      students.find((s) => s.id === selectedStudentForAnalytics)
+                        ?.last_name
+                    }{" "}
+                    {
+                      students.find((s) => s.id === selectedStudentForAnalytics)
+                        ?.first_name
+                    }
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Средний балл по{" "}
+                    {analyticsGroupBy === "month" ? "месяцам" : "дням"} (в
+                    процентах от максимальной оценки)
+                  </p>
+                  {/* Отладочная информация */}
+                  <p className="text-xs text-gray-400">
+                    Данных для графика: {studentGradeData.length}
+                  </p>
+                </div>
+
+                {isAnalyticsLoading ? (
+                  <div className="flex justify-center items-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  </div>
+                ) : studentGradeData.length > 0 ? (
+                  <div className="space-y-6">
+                    {/* График успеваемости */}
+                    <div className="bg-white rounded-lg border p-6">
+                      <h4 className="font-medium mb-4 text-gray-900">
+                        График динамики успеваемости
+                      </h4>
+                      {/* give parent a fixed pixel height so ResponsiveContainer can measure */}
+                      <div
+                        style={{ width: "100%", height: 320 }}
+                        className="w-full"
+                      >
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart
+                            data={studentGradeData}
+                            margin={{
+                              top: 20,
+                              right: 30,
+                              left: 20,
+                              bottom: 40,
+                            }}
+                          >
+                            <CartesianGrid
+                              strokeDasharray="3 3"
+                              stroke="#e0e0e0"
+                            />
+                            <XAxis
+                              dataKey="period"
+                              fontSize={11}
+                              angle={0}
+                              textAnchor="middle"
+                              height={40}
+                              stroke="#666"
+                              interval={0}
+                              tick={{ fontSize: 11 }}
+                            />
+                            <YAxis
+                              domain={[0, 100]}
+                              label={{
+                                value: "Средний балл (%)",
+                                angle: -90,
+                                position: "insideLeft",
+                              }}
+                              stroke="#666"
+                              fontSize={12}
+                            />
+                            <Tooltip
+                              formatter={(value: any) => [
+                                `${value}%`,
+                                "Средний балл",
+                              ]}
+                              labelFormatter={(label, payload) => {
+                                if (
+                                  payload &&
+                                  payload[0] &&
+                                  payload[0].payload.fullPeriod
+                                ) {
+                                  return `Период: ${payload[0].payload.fullPeriod}`;
+                                }
+                                return `Период: ${label}`;
+                              }}
+                              contentStyle={{
+                                backgroundColor: "#fff",
+                                border: "1px solid #ccc",
+                                borderRadius: "8px",
+                                boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                              }}
+                            />
+                            <Line
+                              type="monotone"
+                              dataKey="averageScore"
+                              stroke="#2563eb"
+                              strokeWidth={3}
+                              dot={{ fill: "#2563eb", strokeWidth: 2, r: 6 }}
+                              activeDot={{
+                                r: 8,
+                                stroke: "#2563eb",
+                                strokeWidth: 2,
+                                fill: "#ffffff",
+                              }}
+                              connectNulls={false}
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+
+                    {/* Статистика */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <Card>
+                        <CardContent className="p-4">
+                          <div className="text-center">
+                            <p className="text-sm text-gray-600">Всего работ</p>
+                            <p className="text-2xl font-bold text-blue-600">
+                              {studentGradeData.reduce(
+                                (sum, item) => sum + item.submissionsCount,
+                                0
+                              )}
+                            </p>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      <Card>
+                        <CardContent className="p-4">
+                          <div className="text-center">
+                            <p className="text-sm text-gray-600">
+                              Средний балл
+                            </p>
+                            <p className="text-2xl font-bold text-green-600">
+                              {Math.round(
+                                studentGradeData.reduce(
+                                  (sum, item) => sum + item.averageScore,
+                                  0
+                                ) / studentGradeData.length
+                              )}
+                              %
+                            </p>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      <Card>
+                        <CardContent className="p-4">
+                          <div className="text-center">
+                            <p className="text-sm text-gray-600">Периодов</p>
+                            <p className="text-2xl font-bold text-purple-600">
+                              {studentGradeData.length}
+                            </p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500">
+                      У данного ученика пока нет проверенных работ для анализа
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
 
