@@ -42,7 +42,6 @@ import {
   Filter,
   Search,
 } from "lucide-react";
-import ReactMarkdown from "react-markdown";
 import { ImageWithFallback } from "../figma/ImageWithFallback";
 import { ImagePreview } from "../ui/image-preview";
 import { ContentFormatter } from "../ui/content-formatter";
@@ -506,9 +505,12 @@ export function StudentDashboard() {
                     </CardHeader>
                     <CardContent className="flex flex-col h-full">
                       <div className="flex-1">
-                        <p className="text-gray-600 text-sm mb-4 line-clamp-3">
-                          {assignment.description}
-                        </p>
+                        <div className="text-gray-600 text-sm mb-4 line-clamp-3">
+                          <ContentFormatter
+                            content={assignment.description}
+                            className="text-sm"
+                          />
+                        </div>
 
                         {assignment.image_urls &&
                           assignment.image_urls.length > 0 && (
@@ -618,11 +620,10 @@ export function StudentDashboard() {
                                       Условие:
                                     </p>
                                     <div className="bg-gray-50 rounded-lg p-4">
-                                      <div className="prose prose-sm">
-                                        <ReactMarkdown>
-                                          {assignment.description}
-                                        </ReactMarkdown>
-                                      </div>
+                                      <ContentFormatter
+                                        content={assignment.description}
+                                        className="text-sm"
+                                      />
                                     </div>
                                     {assignment.image_urls &&
                                       assignment.image_urls.length > 0 && (
