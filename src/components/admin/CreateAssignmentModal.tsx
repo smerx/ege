@@ -1,14 +1,20 @@
-import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
-import { Textarea } from '../ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Badge } from '../ui/badge';
-import { Assignment, Question } from '../../types';
-import { Plus, Trash2, Save } from 'lucide-react';
+import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { Textarea } from "../ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Badge } from "../ui/badge";
+import { Assignment, Question } from "../../types";
+import { Plus, Trash2, Save } from "lucide-react";
 
 interface CreateAssignmentModalProps {
   isOpen: boolean;
@@ -16,48 +22,63 @@ interface CreateAssignmentModalProps {
   onCreate: (assignment: Assignment) => void;
 }
 
-export function CreateAssignmentModal({ isOpen, onClose, onCreate }: CreateAssignmentModalProps) {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [topic, setTopic] = useState('');
-  const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('easy');
-  const [dueDate, setDueDate] = useState('');
-  const [questions, setQuestions] = useState<Omit<Question, 'id'>[]>([]);
+export function CreateAssignmentModal({
+  isOpen,
+  onClose,
+  onCreate,
+}: CreateAssignmentModalProps) {
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [topic, setTopic] = useState("");
+  const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard">(
+    "easy"
+  );
+  const [dueDate, setDueDate] = useState("");
+  const [questions, setQuestions] = useState<Omit<Question, "id">[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState({
-    question: '',
-    options: ['', '', '', ''],
+    question: "",
+    options: ["", "", "", ""],
     correct_answer: 0,
-    explanation: '',
-    points: 10
+    explanation: "",
+    points: 10,
   });
 
   const addQuestion = () => {
-    if (currentQuestion.question && currentQuestion.options.every(opt => opt.trim())) {
-      setQuestions(prev => [...prev, { ...currentQuestion }]);
+    if (
+      currentQuestion.question &&
+      currentQuestion.options.every((opt) => opt.trim())
+    ) {
+      setQuestions((prev) => [...prev, { ...currentQuestion }]);
       setCurrentQuestion({
-        question: '',
-        options: ['', '', '', ''],
+        question: "",
+        options: ["", "", "", ""],
         correct_answer: 0,
-        explanation: '',
-        points: 10
+        explanation: "",
+        points: 10,
       });
     }
   };
 
   const removeQuestion = (index: number) => {
-    setQuestions(prev => prev.filter((_, i) => i !== index));
+    setQuestions((prev) => prev.filter((_, i) => i !== index));
   };
 
   const updateCurrentQuestionOption = (index: number, value: string) => {
     const newOptions = [...currentQuestion.options];
     newOptions[index] = value;
-    setCurrentQuestion(prev => ({ ...prev, options: newOptions }));
+    setCurrentQuestion((prev) => ({ ...prev, options: newOptions }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!title || !description || !topic || !dueDate || questions.length === 0) {
+
+    if (
+      !title ||
+      !description ||
+      !topic ||
+      !dueDate ||
+      questions.length === 0
+    ) {
       return;
     }
 
@@ -69,28 +90,28 @@ export function CreateAssignmentModal({ isOpen, onClose, onCreate }: CreateAssig
       difficulty,
       questions: questions.map((q, index) => ({
         ...q,
-        id: `q_${index + 1}`
+        id: `q_${index + 1}`,
       })),
       due_date: new Date(dueDate).toISOString(),
       created_at: new Date().toISOString(),
-      created_by: 'admin'
+      created_by: "admin",
     };
 
     onCreate(newAssignment);
-    
+
     // Reset form
-    setTitle('');
-    setDescription('');
-    setTopic('');
-    setDifficulty('easy');
-    setDueDate('');
+    setTitle("");
+    setDescription("");
+    setTopic("");
+    setDifficulty("easy");
+    setDueDate("");
     setQuestions([]);
     setCurrentQuestion({
-      question: '',
-      options: ['', '', '', ''],
+      question: "",
+      options: ["", "", "", ""],
       correct_answer: 0,
-      explanation: '',
-      points: 10
+      explanation: "",
+      points: 10,
     });
   };
 
@@ -124,19 +145,30 @@ export function CreateAssignmentModal({ isOpen, onClose, onCreate }: CreateAssig
                   <SelectValue placeholder="Выберите тему" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Системы счисления">Системы счисления</SelectItem>
+                  <SelectItem value="Системы счисления">
+                    Системы счисления
+                  </SelectItem>
                   <SelectItem value="Алгоритмизация">Алгоритмизация</SelectItem>
-                  <SelectItem value="Информация и кодирование">Информация и кодирование</SelectItem>
+                  <SelectItem value="Информация и кодирование">
+                    Информация и кодирование
+                  </SelectItem>
                   <SelectItem value="Логика">Логика</SelectItem>
                   <SelectItem value="Базы данных">Базы данных</SelectItem>
-                  <SelectItem value="Электронные таблицы">Электронные таблицы</SelectItem>
+                  <SelectItem value="Электронные таблицы">
+                    Электронные таблицы
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="difficulty">Сложность</Label>
-              <Select value={difficulty} onValueChange={(value: 'easy' | 'medium' | 'hard') => setDifficulty(value)}>
+              <Select
+                value={difficulty}
+                onValueChange={(value: "easy" | "medium" | "hard") =>
+                  setDifficulty(value)
+                }
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -176,21 +208,35 @@ export function CreateAssignmentModal({ isOpen, onClose, onCreate }: CreateAssig
           {questions.length > 0 && (
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <h3 className="font-semibold">Добавленные вопросы ({questions.length})</h3>
+                <h3 className="font-semibold">
+                  Добавленные вопросы ({questions.length})
+                </h3>
                 <Badge variant="outline">Общий балл: {totalPoints}</Badge>
               </div>
-              
+
               <div className="space-y-3 max-h-60 overflow-y-auto">
                 {questions.map((question, index) => (
                   <Card key={index} className="relative">
                     <CardContent className="p-4">
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
-                          <p className="font-medium mb-2">Вопрос {index + 1}: {question.question}</p>
+                          <p className="font-medium mb-2">
+                            Вопрос {index + 1}: {question.question}
+                          </p>
                           <div className="grid grid-cols-2 gap-2 text-sm">
                             {question.options.map((option, optIndex) => (
-                              <p key={optIndex} className={optIndex === question.correct_answer ? 'text-green-600 font-medium' : 'text-muted-foreground'}>
-                                {optIndex === question.correct_answer ? '✓ ' : ''}{option}
+                              <p
+                                key={optIndex}
+                                className={
+                                  optIndex === question.correct_answer
+                                    ? "text-green-600 font-medium"
+                                    : "text-muted-foreground"
+                                }
+                              >
+                                {optIndex === question.correct_answer
+                                  ? "✓ "
+                                  : ""}
+                                {option}
                               </p>
                             ))}
                           </div>
@@ -226,7 +272,12 @@ export function CreateAssignmentModal({ isOpen, onClose, onCreate }: CreateAssig
                 <Textarea
                   id="question"
                   value={currentQuestion.question}
-                  onChange={(e) => setCurrentQuestion(prev => ({ ...prev, question: e.target.value }))}
+                  onChange={(e) =>
+                    setCurrentQuestion((prev) => ({
+                      ...prev,
+                      question: e.target.value,
+                    }))
+                  }
                   placeholder="Введите текст вопроса"
                   rows={2}
                 />
@@ -242,13 +293,20 @@ export function CreateAssignmentModal({ isOpen, onClose, onCreate }: CreateAssig
                           type="radio"
                           name="correct_answer"
                           checked={currentQuestion.correct_answer === index}
-                          onChange={() => setCurrentQuestion(prev => ({ ...prev, correct_answer: index }))}
+                          onChange={() =>
+                            setCurrentQuestion((prev) => ({
+                              ...prev,
+                              correct_answer: index,
+                            }))
+                          }
                         />
                         <Label className="text-sm">Вариант {index + 1}</Label>
                       </div>
                       <Input
                         value={option}
-                        onChange={(e) => updateCurrentQuestionOption(index, e.target.value)}
+                        onChange={(e) =>
+                          updateCurrentQuestionOption(index, e.target.value)
+                        }
                         placeholder={`Вариант ${index + 1}`}
                       />
                     </div>
@@ -262,7 +320,12 @@ export function CreateAssignmentModal({ isOpen, onClose, onCreate }: CreateAssig
                   <Textarea
                     id="explanation"
                     value={currentQuestion.explanation}
-                    onChange={(e) => setCurrentQuestion(prev => ({ ...prev, explanation: e.target.value }))}
+                    onChange={(e) =>
+                      setCurrentQuestion((prev) => ({
+                        ...prev,
+                        explanation: e.target.value,
+                      }))
+                    }
                     placeholder="Объяснение правильного ответа"
                     rows={2}
                   />
@@ -276,7 +339,12 @@ export function CreateAssignmentModal({ isOpen, onClose, onCreate }: CreateAssig
                     min="1"
                     max="50"
                     value={currentQuestion.points}
-                    onChange={(e) => setCurrentQuestion(prev => ({ ...prev, points: parseInt(e.target.value) || 10 }))}
+                    onChange={(e) =>
+                      setCurrentQuestion((prev) => ({
+                        ...prev,
+                        points: parseInt(e.target.value) || 10,
+                      }))
+                    }
                   />
                 </div>
               </div>
@@ -286,7 +354,10 @@ export function CreateAssignmentModal({ isOpen, onClose, onCreate }: CreateAssig
                 onClick={addQuestion}
                 variant="outline"
                 className="w-full"
-                disabled={!currentQuestion.question || !currentQuestion.options.every(opt => opt.trim())}
+                disabled={
+                  !currentQuestion.question ||
+                  !currentQuestion.options.every((opt) => opt.trim())
+                }
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Добавить вопрос
@@ -301,7 +372,13 @@ export function CreateAssignmentModal({ isOpen, onClose, onCreate }: CreateAssig
             </Button>
             <Button
               type="submit"
-              disabled={!title || !description || !topic || !dueDate || questions.length === 0}
+              disabled={
+                !title ||
+                !description ||
+                !topic ||
+                !dueDate ||
+                questions.length === 0
+              }
             >
               <Save className="w-4 h-4 mr-2" />
               Создать задание

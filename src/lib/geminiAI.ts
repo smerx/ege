@@ -1,7 +1,7 @@
 // Gemini AI service for automatic assignment evaluation
 // Free API - up to 60 requests per minute, 1500 requests per day
 
-import { cleanCodeForAI } from './codeUtils';
+import { cleanCodeForAI } from "./codeUtils";
 
 interface AssignmentData {
   title: string;
@@ -40,9 +40,14 @@ export async function evaluateSubmissionWithAI(
   }
 
   // Clean and extract the student's code for AI analysis
-  const cleanedCode = submission.textContent ? cleanCodeForAI(submission.textContent) : "";
-  
-  console.log("Original submission:", submission.textContent?.substring(0, 200) + "...");
+  const cleanedCode = submission.textContent
+    ? cleanCodeForAI(submission.textContent)
+    : "";
+
+  console.log(
+    "Original submission:",
+    submission.textContent?.substring(0, 200) + "..."
+  );
   console.log("Cleaned code for AI:", cleanedCode);
 
   const prompt = `
@@ -62,12 +67,16 @@ ${
 
 РАБОТА УЧЕНИКА:
 ${submission.textContent ? `Исходный ответ: ${submission.textContent}` : ""}
-${cleanedCode ? `
+${
+  cleanedCode
+    ? `
 Извлеченный код для анализа:
 \`\`\`
 ${cleanedCode}
 \`\`\`
-` : ""}
+`
+    : ""
+}
 ${
   submission.imageUrls?.length
     ? `Изображения работы: ${submission.imageUrls.length} шт.`

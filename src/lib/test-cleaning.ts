@@ -1,5 +1,9 @@
 // Test file to verify code cleaning functions
-import { cleanCodeForAI, cleanStudentCode, extractCodeFromSubmission } from './codeUtils';
+import {
+  cleanCodeForAI,
+  cleanStudentCode,
+  extractCodeFromSubmission,
+} from "./codeUtils";
 
 // Test cases
 const testCode1 = `$(

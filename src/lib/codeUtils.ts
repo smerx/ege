@@ -10,7 +10,7 @@ export function cleanStudentCode(content: string): string {
   }
 
   // Split into lines for processing
-  const lines = content.split('\n');
+  const lines = content.split("\n");
   const cleanedLines: string[] = [];
 
   let skipFirstLines = true;
@@ -19,21 +19,20 @@ export function cleanStudentCode(content: string): string {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const trimmed = line.trim();
-    
+
     // Skip empty lines and platform artifacts at the beginning
     if (skipFirstLines && linesSkipped < 3) {
       // Common platform artifacts to skip
-      const isArtifact = (
-        trimmed === '' ||
-        trimmed.includes('platform') ||
-        trimmed.includes('system') ||
-        trimmed.includes('version') ||
-        trimmed.includes('python') ||
-        trimmed.includes('>>>') ||
-        trimmed.includes('...') ||
+      const isArtifact =
+        trimmed === "" ||
+        trimmed.includes("platform") ||
+        trimmed.includes("system") ||
+        trimmed.includes("version") ||
+        trimmed.includes("python") ||
+        trimmed.includes(">>>") ||
+        trimmed.includes("...") ||
         trimmed.length < 3 ||
-        /^[^a-zA-Zа-яА-Я0-9]*$/.test(trimmed) // Only special characters
-      );
+        /^[^a-zA-Zа-яА-Я0-9]*$/.test(trimmed); // Only special characters
 
       if (isArtifact) {
         linesSkipped++;
@@ -51,7 +50,7 @@ export function cleanStudentCode(content: string): string {
 
   // Remove common leading whitespace (dedent)
   if (cleanedLines.length > 0) {
-    const nonEmptyLines = cleanedLines.filter(line => line.trim().length > 0);
+    const nonEmptyLines = cleanedLines.filter((line) => line.trim().length > 0);
     if (nonEmptyLines.length > 0) {
       // Find minimum indentation
       let minIndent = Infinity;
@@ -61,22 +60,25 @@ export function cleanStudentCode(content: string): string {
           minIndent = Math.min(minIndent, match[1].length);
         }
       }
-      
+
       // Remove common indentation
       if (minIndent > 0 && minIndent !== Infinity) {
-        return cleanedLines.map(line => {
-          if (line.trim().length === 0) return '';
-          return line.substring(minIndent);
-        }).join('\n').trim();
+        return cleanedLines
+          .map((line) => {
+            if (line.trim().length === 0) return "";
+            return line.substring(minIndent);
+          })
+          .join("\n")
+          .trim();
       }
     }
   }
 
-  return cleanedLines.join('\n').trim();
+  return cleanedLines.join("\n").trim();
 }
 
 export function extractCodeFromSubmission(content: string): string {
-  if (!content) return '';
+  if (!content) return "";
 
   console.log("Extracting code from:", content.substring(0, 100) + "...");
 
@@ -100,7 +102,7 @@ export function extractCodeFromSubmission(content: string): string {
   }
 
   // Format 3: Look for code patterns in the entire text
-  const lines = content.split('\n');
+  const lines = content.split("\n");
   const codeLines: string[] = [];
   let foundCodePattern = false;
   let codeStartIndex = -1;
@@ -108,21 +110,20 @@ export function extractCodeFromSubmission(content: string): string {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const trimmed = line.trim();
-    
+
     // Check if line looks like code
-    const isCodeLine = (
-      trimmed.includes('=') && /^[a-zA-Zа-яА-Я_]/.test(trimmed) ||
-      trimmed.includes('print(') ||
-      trimmed.includes('input(') ||
-      trimmed.startsWith('if ') ||
-      trimmed.startsWith('for ') ||
-      trimmed.startsWith('while ') ||
-      trimmed.startsWith('def ') ||
-      trimmed.startsWith('import ') ||
-      trimmed.startsWith('from ') ||
+    const isCodeLine =
+      (trimmed.includes("=") && /^[a-zA-Zа-яА-Я_]/.test(trimmed)) ||
+      trimmed.includes("print(") ||
+      trimmed.includes("input(") ||
+      trimmed.startsWith("if ") ||
+      trimmed.startsWith("for ") ||
+      trimmed.startsWith("while ") ||
+      trimmed.startsWith("def ") ||
+      trimmed.startsWith("import ") ||
+      trimmed.startsWith("from ") ||
       /^[a-zA-Zа-яА-Я_][a-zA-Zа-яА-Я0-9_]*\s*=/.test(trimmed) ||
-      /^[a-zA-Zа-яА-Я_][a-zA-Zа-яА-Я0-9_]*\(/.test(trimmed)
-    );
+      /^[a-zA-Zа-яА-Я_][a-zA-Zа-яА-Я0-9_]*\(/.test(trimmed);
 
     if (isCodeLine && !foundCodePattern) {
       console.log("Found code pattern at line", i);
@@ -137,7 +138,7 @@ export function extractCodeFromSubmission(content: string): string {
 
   if (foundCodePattern && codeLines.length > 0) {
     console.log("Extracted code lines:", codeLines.length);
-    return cleanStudentCode(codeLines.join('\n'));
+    return cleanStudentCode(codeLines.join("\n"));
   }
 
   console.log("No specific code pattern found, returning original");
@@ -153,63 +154,62 @@ export function cleanCodeForAI(content: string): string {
 
   // First extract the code
   let code = extractCodeFromSubmission(content);
-  
+
   console.log("Extracted code:", code.substring(0, 200) + "...");
-  
+
   // Then clean it
   code = cleanStudentCode(code);
-  
+
   console.log("Cleaned code:", code.substring(0, 200) + "...");
-  
+
   // Additional AI-specific cleaning
-  const lines = code.split('\n');
+  const lines = code.split("\n");
   const cleanedLines: string[] = [];
-  
+
   let foundMeaningfulCode = false;
-  
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const trimmed = line.trim();
-    
+
     // Skip empty lines at the beginning
     if (!foundMeaningfulCode && trimmed.length === 0) continue;
-    
+
     // Skip obvious platform artifacts
     if (
-      trimmed.includes('>>>') ||
-      trimmed.includes('...') ||
+      trimmed.includes(">>>") ||
+      trimmed.includes("...") ||
       trimmed.match(/^[\s\-\=\+\*\>\<]*$/) ||
-      trimmed.includes('python') && trimmed.length < 10 ||
-      trimmed.includes('version') ||
-      trimmed.includes('platform')
+      (trimmed.includes("python") && trimmed.length < 10) ||
+      trimmed.includes("version") ||
+      trimmed.includes("platform")
     ) {
       continue;
     }
-    
+
     // Check if this looks like meaningful code
-    const isMeaningfulLine = (
-      trimmed.includes('=') ||
-      trimmed.includes('print') ||
-      trimmed.includes('input') ||
-      trimmed.includes('if ') ||
-      trimmed.includes('for ') ||
-      trimmed.includes('while ') ||
-      trimmed.includes('def ') ||
-      trimmed.includes('import ') ||
-      trimmed.includes('from ') ||
+    const isMeaningfulLine =
+      trimmed.includes("=") ||
+      trimmed.includes("print") ||
+      trimmed.includes("input") ||
+      trimmed.includes("if ") ||
+      trimmed.includes("for ") ||
+      trimmed.includes("while ") ||
+      trimmed.includes("def ") ||
+      trimmed.includes("import ") ||
+      trimmed.includes("from ") ||
       /^[a-zA-Zа-яА-Я_]/.test(trimmed) ||
-      trimmed.length > 5
-    );
-    
+      trimmed.length > 5;
+
     if (isMeaningfulLine || foundMeaningfulCode) {
       foundMeaningfulCode = true;
       // Keep original indentation for code structure
       cleanedLines.push(line);
     }
   }
-  
-  const result = cleanedLines.join('\n').trim();
+
+  const result = cleanedLines.join("\n").trim();
   console.log("Final AI code:", result);
-  
+
   return result || code; // Fallback to original cleaned code if nothing found
 }

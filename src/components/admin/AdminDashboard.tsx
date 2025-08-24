@@ -2,7 +2,10 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { supabase, uploadFile, hashPassword } from "../../lib/supabase";
 import { evaluateSubmissionWithAI, formatAIFeedback } from "../../lib/geminiAI";
-import { cleanStudentCode, extractCodeFromSubmission } from "../../lib/codeUtils";
+import {
+  cleanStudentCode,
+  extractCodeFromSubmission,
+} from "../../lib/codeUtils";
 import {
   Card,
   CardContent,
@@ -212,6 +215,12 @@ export function AdminDashboard() {
   const [aiEvaluationResults, setAiEvaluationResults] = useState<
     Record<string, any>
   >({});
+
+  // Temporary score states for grading
+  const [tempScores, setTempScores] = useState<Record<string, string>>({});
+  const [tempFeedbacks, setTempFeedbacks] = useState<Record<string, string>>(
+    {}
+  );
 
   // Form states
   const [newAssignment, setNewAssignment] = useState({
@@ -1152,26 +1161,18 @@ export function AdminDashboard() {
       // Store AI result
       setAiEvaluationResults((prev) => ({ ...prev, [submissionId]: aiResult }));
 
-      // Format feedback for textarea
+      // Format feedback and update state
       const formattedFeedback = formatAIFeedback(aiResult);
 
-      // Update the feedback textarea
-      const feedbackTextarea = document.getElementById(
-        `feedback-${submissionId}`
-      ) as HTMLTextAreaElement;
-      const scoreInput = document.getElementById(
-        `score-${submissionId}`
-      ) as HTMLInputElement;
+      setTempFeedbacks((prev) => ({
+        ...prev,
+        [submissionId]: formattedFeedback,
+      }));
 
-      if (feedbackTextarea) {
-        feedbackTextarea.value = formattedFeedback;
-        feedbackTextarea.dispatchEvent(new Event("input", { bubbles: true }));
-      }
-
-      if (scoreInput) {
-        scoreInput.value = aiResult.suggestedScore.toString();
-        scoreInput.dispatchEvent(new Event("input", { bubbles: true }));
-      }
+      setTempScores((prev) => ({
+        ...prev,
+        [submissionId]: aiResult.suggestedScore.toString(),
+      }));
 
       toast.success("ИИ-анализ завершен!");
     } catch (error) {
@@ -2208,6 +2209,13 @@ export function AdminDashboard() {
                               <Input
                                 id={`score-${submission.id}`}
                                 type="number"
+                                value={tempScores[submission.id] ?? ""}
+                                onChange={(e) =>
+                                  setTempScores((prev) => ({
+                                    ...prev,
+                                    [submission.id]: e.target.value,
+                                  }))
+                                }
                                 max={assignment?.max_score}
                                 placeholder="0"
                               />
@@ -2236,6 +2244,13 @@ export function AdminDashboard() {
                               </div>
                               <Textarea
                                 id={`feedback-${submission.id}`}
+                                value={tempFeedbacks[submission.id] ?? ""}
+                                onChange={(e) =>
+                                  setTempFeedbacks((prev) => ({
+                                    ...prev,
+                                    [submission.id]: e.target.value,
+                                  }))
+                                }
                                 placeholder="Комментарий к работе..."
                                 rows={2}
                               />
@@ -2262,15 +2277,11 @@ export function AdminDashboard() {
                           <div className="flex justify-end">
                             <Button
                               onClick={() => {
-                                const scoreInput = document.getElementById(
-                                  `score-${submission.id}`
-                                ) as HTMLInputElement;
-                                const feedbackInput = document.getElementById(
-                                  `feedback-${submission.id}`
-                                ) as HTMLTextAreaElement;
-
-                                const score = parseInt(scoreInput.value);
-                                const feedback = feedbackInput.value;
+                                const score = parseInt(
+                                  tempScores[submission.id] || "0"
+                                );
+                                const feedback =
+                                  tempFeedbacks[submission.id] || "";
 
                                 if (!isNaN(score)) {
                                   handleGradeSubmission(
@@ -2278,6 +2289,17 @@ export function AdminDashboard() {
                                     score,
                                     feedback
                                   );
+                                  // Clear temp values after saving
+                                  setTempScores((prev) => {
+                                    const newScores = { ...prev };
+                                    delete newScores[submission.id];
+                                    return newScores;
+                                  });
+                                  setTempFeedbacks((prev) => {
+                                    const newFeedbacks = { ...prev };
+                                    delete newFeedbacks[submission.id];
+                                    return newFeedbacks;
+                                  });
                                 }
                               }}
                             >
@@ -2569,13 +2591,14 @@ export function AdminDashboard() {
                 <Input
                   id="editScore"
                   type="number"
-                  value={editingSubmission.score || 0}
-                  onChange={(e) =>
+                  value={editingSubmission.score?.toString() ?? ""}
+                  onChange={(e) => {
+                    const value = e.target.value;
                     setEditingSubmission({
                       ...editingSubmission,
-                      score: parseInt(e.target.value) || 0,
-                    })
-                  }
+                      score: value === "" ? undefined : parseInt(value),
+                    });
+                  }}
                   max={
                     assignments.find(
                       (a) => a.id === editingSubmission.assignment_id
