@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
+import { useIsMobile } from "../ui/use-mobile";
 import {
   Dialog,
   DialogContent,
@@ -109,6 +110,23 @@ interface Submission {
 
 export function AdminDashboard() {
   const { logout, user } = useAuth();
+  const isMobile = useIsMobile();
+
+  // Custom hook for large screens (1300px+)
+  const [isLargeScreen, setIsLargeScreen] = useState(true);
+
+  useEffect(() => {
+    const checkScreenSize = () => {
+      const width = window.innerWidth;
+      setIsLargeScreen(width >= 1300);
+    };
+
+    checkScreenSize();
+    window.addEventListener("resize", checkScreenSize);
+
+    return () => window.removeEventListener("resize", checkScreenSize);
+  }, []);
+
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [theoryBlocks, setTheoryBlocks] = useState<TheoryBlock[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
@@ -197,6 +215,23 @@ export function AdminDashboard() {
   );
   const [submissionStudentFilter, setSubmissionStudentFilter] = useState("");
   const [submissionAssignmentFilter, setSubmissionAssignmentFilter] =
+    useState("");
+
+  // Mobile filter modal states
+  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+  const [currentFilterTab, setCurrentFilterTab] = useState<
+    "assignments" | "submissions"
+  >("assignments");
+  const [tempAssignmentFilter, setTempAssignmentFilter] = useState<
+    "all" | "homework" | "classwork"
+  >("all");
+  const [tempAssignmentSearch, setTempAssignmentSearch] = useState("");
+  const [tempSubmissionSort, setTempSubmissionSort] = useState<
+    "newest" | "oldest"
+  >("newest");
+  const [tempSubmissionStudentFilter, setTempSubmissionStudentFilter] =
+    useState("");
+  const [tempSubmissionAssignmentFilter, setTempSubmissionAssignmentFilter] =
     useState("");
 
   useEffect(() => {
@@ -856,6 +891,43 @@ export function AdminDashboard() {
     setIsAccessControlOpen(true);
   };
 
+  // Mobile filter functions
+  const openMobileFilters = (tabType: "assignments" | "submissions") => {
+    setCurrentFilterTab(tabType);
+    if (tabType === "assignments") {
+      setTempAssignmentFilter(assignmentFilter);
+      setTempAssignmentSearch(assignmentSearch);
+    } else {
+      setTempSubmissionSort(submissionSort);
+      setTempSubmissionStudentFilter(submissionStudentFilter);
+      setTempSubmissionAssignmentFilter(submissionAssignmentFilter);
+    }
+    setIsMobileFilterOpen(true);
+  };
+
+  const applyMobileFilters = (tabType: "assignments" | "submissions") => {
+    if (tabType === "assignments") {
+      setAssignmentFilter(tempAssignmentFilter);
+      setAssignmentSearch(tempAssignmentSearch);
+    } else {
+      setSubmissionSort(tempSubmissionSort);
+      setSubmissionStudentFilter(tempSubmissionStudentFilter);
+      setSubmissionAssignmentFilter(tempSubmissionAssignmentFilter);
+    }
+    setIsMobileFilterOpen(false);
+  };
+
+  const resetMobileFilters = (tabType: "assignments" | "submissions") => {
+    if (tabType === "assignments") {
+      setTempAssignmentFilter("all");
+      setTempAssignmentSearch("");
+    } else {
+      setTempSubmissionSort("newest");
+      setTempSubmissionStudentFilter("");
+      setTempSubmissionAssignmentFilter("");
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -964,37 +1036,56 @@ export function AdminDashboard() {
           {/* Задания */}
           <TabsContent value="assignments" className="space-y-6">
             <div className="flex items-center justify-between gap-4">
-              {/* Фильтры */}
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2">
-                  <Filter className="w-4 h-4 text-gray-500" />
-                  <Select
-                    value={assignmentFilter}
-                    onValueChange={(value: "all" | "homework" | "classwork") =>
-                      setAssignmentFilter(value)
-                    }
-                  >
-                    <SelectTrigger className="w-48">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Все задания</SelectItem>
-                      <SelectItem value="homework">Домашняя работа</SelectItem>
-                      <SelectItem value="classwork">Классная работа</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              {/* Фильтры для десктопа */}
+              {!isMobile && (
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <Filter className="w-4 h-4 text-gray-500" />
+                    <Select
+                      value={assignmentFilter}
+                      onValueChange={(
+                        value: "all" | "homework" | "classwork"
+                      ) => setAssignmentFilter(value)}
+                    >
+                      <SelectTrigger className="w-48">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Все задания</SelectItem>
+                        <SelectItem value="homework">
+                          Домашняя работа
+                        </SelectItem>
+                        <SelectItem value="classwork">
+                          Классная работа
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                <div className="flex items-center gap-2">
-                  <Search className="w-4 h-4 text-gray-500" />
-                  <Input
-                    placeholder="Поиск по названию..."
-                    value={assignmentSearch}
-                    onChange={(e) => setAssignmentSearch(e.target.value)}
-                    className="w-48"
-                  />
+                  <div className="flex items-center gap-2">
+                    <Search className="w-4 h-4 text-gray-500" />
+                    <Input
+                      placeholder="Поиск по названию..."
+                      value={assignmentSearch}
+                      onChange={(e) => setAssignmentSearch(e.target.value)}
+                      className="w-48"
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* Кнопка фильтров для мобилки */}
+              {isMobile && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => openMobileFilters("assignments")}
+                  >
+                    <Filter className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
 
               {/* Кнопка создания */}
               <Dialog
@@ -1002,9 +1093,9 @@ export function AdminDashboard() {
                 onOpenChange={setIsCreateAssignmentOpen}
               >
                 <DialogTrigger asChild>
-                  <Button>
+                  <Button className="shrink-0">
                     <Plus className="w-4 h-4 mr-2" />
-                    Создать задание
+                    {isMobile ? "Создать" : "Создать задание"}
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
@@ -1231,9 +1322,9 @@ export function AdminDashboard() {
                 onOpenChange={setIsCreateTheoryOpen}
               >
                 <DialogTrigger asChild>
-                  <Button>
+                  <Button className="shrink-0">
                     <Plus className="w-4 h-4 mr-2" />
-                    Добавить теорию
+                    {isMobile ? "Добавить" : "Добавить теорию"}
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
@@ -1424,9 +1515,9 @@ export function AdminDashboard() {
                 onOpenChange={setIsAddStudentOpen}
               >
                 <DialogTrigger asChild>
-                  <Button>
+                  <Button className="shrink-0">
                     <UserPlus className="w-4 h-4 mr-2" />
-                    Добавить ученика
+                    {isMobile ? "Добавить" : "Добавить ученика"}
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-[500px]">
@@ -1637,53 +1728,77 @@ export function AdminDashboard() {
           {/* Проверка работ */}
           <TabsContent value="submissions" className="space-y-6">
             <div className="flex items-center justify-between gap-4">
-              {/* Фильтры */}
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2">
-                  <Search className="w-4 h-4 text-gray-500" />
-                  <Input
-                    placeholder="Поиск по ученику..."
-                    value={submissionStudentFilter}
-                    onChange={(e) => setSubmissionStudentFilter(e.target.value)}
-                    className="w-48"
-                  />
-                </div>
+              {/* Фильтры для десктопа */}
+              {isLargeScreen && (
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <Search className="w-4 h-4 text-gray-500" />
+                    <Input
+                      placeholder="Поиск по ученику..."
+                      value={submissionStudentFilter}
+                      onChange={(e) =>
+                        setSubmissionStudentFilter(e.target.value)
+                      }
+                      className="w-48"
+                    />
+                  </div>
 
-                <div className="flex items-center gap-2">
-                  <Filter className="w-4 h-4 text-gray-500" />
-                  <Input
-                    placeholder="Поиск по заданию..."
-                    value={submissionAssignmentFilter}
-                    onChange={(e) =>
-                      setSubmissionAssignmentFilter(e.target.value)
+                  <div className="flex items-center gap-2">
+                    <Filter className="w-4 h-4 text-gray-500" />
+                    <Input
+                      placeholder="Поиск по заданию..."
+                      value={submissionAssignmentFilter}
+                      onChange={(e) =>
+                        setSubmissionAssignmentFilter(e.target.value)
+                      }
+                      className="w-48"
+                    />
+                  </div>
+
+                  <Select
+                    value={submissionSort}
+                    onValueChange={(value: "newest" | "oldest") =>
+                      setSubmissionSort(value)
                     }
-                    className="w-48"
-                  />
+                  >
+                    <SelectTrigger className="w-48">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="newest">От новых к старым</SelectItem>
+                      <SelectItem value="oldest">От старых к новым</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
+              )}
 
-                <Select
-                  value={submissionSort}
-                  onValueChange={(value: "newest" | "oldest") =>
-                    setSubmissionSort(value)
-                  }
-                >
-                  <SelectTrigger className="w-48">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="newest">От новых к старым</SelectItem>
-                    <SelectItem value="oldest">От старых к новым</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* Кнопка фильтров для мобилки */}
+              {!isLargeScreen && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => openMobileFilters("submissions")}
+                  >
+                    <Filter className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
 
               {/* Кнопка архива */}
               <Button
                 variant="outline"
                 onClick={() => setShowArchive(!showArchive)}
+                className="shrink-0"
               >
                 <Archive className="w-4 h-4 mr-2" />
-                {showArchive ? "К проверке" : "Архив"}
+                {isLargeScreen
+                  ? showArchive
+                    ? "К проверке"
+                    : "Архив"
+                  : showArchive
+                  ? "Проверка"
+                  : "Архив"}
               </Button>
             </div>
 
@@ -2283,6 +2398,112 @@ export function AdminDashboard() {
               )}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Mobile Filters Dialog */}
+      <Dialog open={isMobileFilterOpen} onOpenChange={setIsMobileFilterOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Фильтры</DialogTitle>
+            <DialogDescription>
+              Настройте параметры фильтрации
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {currentFilterTab === "assignments" && (
+              <>
+                <div className="space-y-2">
+                  <Label>Тип задания</Label>
+                  <Select
+                    value={tempAssignmentFilter}
+                    onValueChange={(value: "all" | "homework" | "classwork") =>
+                      setTempAssignmentFilter(value)
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Все задания</SelectItem>
+                      <SelectItem value="homework">Домашняя работа</SelectItem>
+                      <SelectItem value="classwork">Классная работа</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Поиск по названию</Label>
+                  <Input
+                    placeholder="Введите название..."
+                    value={tempAssignmentSearch}
+                    onChange={(e) => setTempAssignmentSearch(e.target.value)}
+                  />
+                </div>
+              </>
+            )}
+
+            {currentFilterTab === "submissions" && (
+              <>
+                <div className="space-y-2">
+                  <Label>Поиск по ученику</Label>
+                  <Input
+                    placeholder="Имя ученика..."
+                    value={tempSubmissionStudentFilter}
+                    onChange={(e) =>
+                      setTempSubmissionStudentFilter(e.target.value)
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Поиск по заданию</Label>
+                  <Input
+                    placeholder="Название задания..."
+                    value={tempSubmissionAssignmentFilter}
+                    onChange={(e) =>
+                      setTempSubmissionAssignmentFilter(e.target.value)
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Сортировка</Label>
+                  <Select
+                    value={tempSubmissionSort}
+                    onValueChange={(value: "newest" | "oldest") =>
+                      setTempSubmissionSort(value)
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="newest">От новых к старым</SelectItem>
+                      <SelectItem value="oldest">От старых к новым</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
+            )}
+          </div>
+
+          <div className="flex gap-2 pt-4">
+            <Button
+              variant="outline"
+              onClick={() => resetMobileFilters(currentFilterTab)}
+              className="flex-1"
+            >
+              Сброс
+            </Button>
+            <Button
+              onClick={() => applyMobileFilters(currentFilterTab)}
+              className="flex-1"
+            >
+              Применить
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
