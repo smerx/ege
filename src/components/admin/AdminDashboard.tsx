@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { supabase, uploadFile, hashPassword } from "../../lib/supabase";
+import { evaluateSubmissionWithAI, formatAIFeedback } from "../../lib/geminiAI";
+import { cleanStudentCode, extractCodeFromSubmission } from "../../lib/codeUtils";
 import {
   Card,
   CardContent,
@@ -82,6 +84,7 @@ import {
   Filter,
   Search,
   TrendingUp,
+  Sparkles,
 } from "lucide-react";
 
 interface Assignment {
@@ -118,6 +121,7 @@ interface Submission {
   assignment_id: string;
   student_id: string;
   content: string;
+  image_urls?: string[];
   submitted_at: string;
   score?: number;
   feedback?: string;
@@ -200,6 +204,14 @@ export function AdminDashboard() {
     "month"
   );
   const [isAnalyticsDialogOpen, setIsAnalyticsDialogOpen] = useState(false);
+
+  // AI evaluation states
+  const [aiEvaluationLoading, setAiEvaluationLoading] = useState<
+    Record<string, boolean>
+  >({});
+  const [aiEvaluationResults, setAiEvaluationResults] = useState<
+    Record<string, any>
+  >({});
 
   // Form states
   const [newAssignment, setNewAssignment] = useState({
@@ -1100,6 +1112,131 @@ export function AdminDashboard() {
       setTempSubmissionSort("newest");
       setTempSubmissionStudentFilter("");
       setTempSubmissionAssignmentFilter("");
+    }
+  };
+
+  const handleAIEvaluation = async (submissionId: string) => {
+    try {
+      setAiEvaluationLoading((prev) => ({ ...prev, [submissionId]: true }));
+
+      // Find submission and assignment data
+      const submission = submissions.find((s) => s.id === submissionId);
+      const assignment = assignments.find(
+        (a) => a.id === submission?.assignment_id
+      );
+
+      if (!submission || !assignment) {
+        toast.error("Не удалось найти данные задания или работы");
+        return;
+      }
+
+      // Prepare data for AI evaluation
+      const assignmentData = {
+        title: assignment.title,
+        description: assignment.description,
+        maxScore: assignment.max_score,
+        imageUrls: assignment.image_urls,
+      };
+
+      const submissionData = {
+        textContent: submission.content,
+        imageUrls: submission.image_urls || [],
+      };
+
+      // Call AI evaluation
+      const aiResult = await evaluateSubmissionWithAI(
+        assignmentData,
+        submissionData
+      );
+
+      // Store AI result
+      setAiEvaluationResults((prev) => ({ ...prev, [submissionId]: aiResult }));
+
+      // Format feedback for textarea
+      const formattedFeedback = formatAIFeedback(aiResult);
+
+      // Update the feedback textarea
+      const feedbackTextarea = document.getElementById(
+        `feedback-${submissionId}`
+      ) as HTMLTextAreaElement;
+      const scoreInput = document.getElementById(
+        `score-${submissionId}`
+      ) as HTMLInputElement;
+
+      if (feedbackTextarea) {
+        feedbackTextarea.value = formattedFeedback;
+        feedbackTextarea.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+
+      if (scoreInput) {
+        scoreInput.value = aiResult.suggestedScore.toString();
+        scoreInput.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+
+      toast.success("ИИ-анализ завершен!");
+    } catch (error) {
+      console.error("AI evaluation error:", error);
+      toast.error(error instanceof Error ? error.message : "Ошибка ИИ-анализа");
+    } finally {
+      setAiEvaluationLoading((prev) => ({ ...prev, [submissionId]: false }));
+    }
+  };
+
+  const handleAIEvaluationForEdit = async (submissionId: string) => {
+    try {
+      setAiEvaluationLoading((prev) => ({ ...prev, [submissionId]: true }));
+
+      // Find submission and assignment data
+      const submission = submissions.find((s) => s.id === submissionId);
+      const assignment = assignments.find(
+        (a) => a.id === submission?.assignment_id
+      );
+
+      if (!submission || !assignment) {
+        toast.error("Не удалось найти данные задания или работы");
+        return;
+      }
+
+      // Prepare data for AI evaluation
+      const assignmentData = {
+        title: assignment.title,
+        description: assignment.description,
+        maxScore: assignment.max_score,
+        imageUrls: assignment.image_urls,
+      };
+
+      const submissionData = {
+        textContent: submission.content,
+        imageUrls: submission.image_urls || [],
+      };
+
+      // Call AI evaluation
+      const aiResult = await evaluateSubmissionWithAI(
+        assignmentData,
+        submissionData
+      );
+
+      // Store AI result
+      setAiEvaluationResults((prev) => ({ ...prev, [submissionId]: aiResult }));
+
+      // Format feedback for editing submission
+      const formattedFeedback = formatAIFeedback(aiResult);
+
+      // Update the editing submission state
+      if (editingSubmission && editingSubmission.id === submissionId) {
+        setEditingSubmission({
+          ...editingSubmission,
+          feedback: formattedFeedback,
+          score: aiResult.suggestedScore,
+        });
+      }
+
+      toast.success("ИИ-анализ завершен!");
+    } catch (error) {
+      console.error("AI evaluation error:", error);
+      toast.error(error instanceof Error ? error.message : "Ошибка ИИ-анализа");
+    } finally {
+      setAiEvaluationLoading((prev) => ({ ...prev, [submissionId]: false }));
     }
   };
 
@@ -2076,9 +2213,27 @@ export function AdminDashboard() {
                               />
                             </div>
                             <div className="space-y-3">
-                              <Label htmlFor={`feedback-${submission.id}`}>
-                                Комментарий
-                              </Label>
+                              <div className="flex items-center justify-between">
+                                <Label htmlFor={`feedback-${submission.id}`}>
+                                  Комментарий
+                                </Label>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() =>
+                                    handleAIEvaluation(submission.id)
+                                  }
+                                  disabled={aiEvaluationLoading[submission.id]}
+                                  className="h-8 px-2"
+                                >
+                                  {aiEvaluationLoading[submission.id] ? (
+                                    <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin" />
+                                  ) : (
+                                    <Sparkles className="w-4 h-4 text-yellow-500" />
+                                  )}
+                                  <span className="ml-1 text-xs">ИИ</span>
+                                </Button>
+                              </div>
                               <Textarea
                                 id={`feedback-${submission.id}`}
                                 placeholder="Комментарий к работе..."
@@ -2429,7 +2584,27 @@ export function AdminDashboard() {
                 />
               </div>
               <div className="space-y-3">
-                <Label htmlFor="editFeedback">Комментарий</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="editFeedback">Комментарий</Label>
+                  {editingSubmission && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() =>
+                        handleAIEvaluationForEdit(editingSubmission.id)
+                      }
+                      disabled={aiEvaluationLoading[editingSubmission.id]}
+                      className="h-8 px-2"
+                    >
+                      {aiEvaluationLoading[editingSubmission.id] ? (
+                        <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin" />
+                      ) : (
+                        <Sparkles className="w-4 h-4 text-yellow-500" />
+                      )}
+                      <span className="ml-1 text-xs">ИИ</span>
+                    </Button>
+                  )}
+                </div>
                 <Textarea
                   id="editFeedback"
                   value={editingSubmission.feedback || ""}

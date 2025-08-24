@@ -39,7 +39,7 @@ export function ContentFormatter({
     let lastIndex = 0;
 
     // Регулярное выражение для поиска блоков кода $(...)
-    const codeBlockRegex = /\$\(([^)]+)\)/g;
+    const codeBlockRegex = /\$\(([\s\S]*?)\)/g;
     // Регулярное выражение для поиска ссылок
     const linkRegex = /(https?:\/\/[^\s]+)/g;
 
@@ -123,7 +123,7 @@ export function ContentFormatter({
           return (
             <div key={index} className="my-2">
               <code
-                className="bg-gray-800 text-green-400 px-3 py-2 rounded text-sm font-mono block"
+                className="bg-gray-800 text-green-400 px-3 py-2 rounded text-sm font-mono block whitespace-pre-wrap"
                 style={{
                   fontFamily: 'Consolas, Monaco, "Courier New", monospace',
                 }}
