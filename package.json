@@ -59,6 +59,14 @@
   "overrides": {
     "date-fns": "^3.6.0"
   },
+  "resolutions": {
+    "date-fns": "^3.6.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "date-fns": "^3.6.0"
+    }
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
