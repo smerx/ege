@@ -222,6 +222,11 @@ export function AdminDashboard() {
     {}
   );
 
+  // Grading states to prevent multiple submissions
+  const [gradingInProgress, setGradingInProgress] = useState<
+    Record<string, boolean>
+  >({});
+
   // Form states
   const [newAssignment, setNewAssignment] = useState({
     title: "",
@@ -365,6 +370,29 @@ export function AdminDashboard() {
 
       setAssignmentAccess(assignmentAccessMap);
       setTheoryAccess(theoryAccessMap);
+
+      // Check for stuck submissions and notify user
+      if (submissionsData && submissionsData.length > 0) {
+        const pendingSubmissions = submissionsData.filter(
+          (s) => s.status === "pending"
+        );
+
+        if (pendingSubmissions.length > 0) {
+          const oneHourAgo = new Date();
+          oneHourAgo.setHours(oneHourAgo.getHours() - 1);
+
+          const stuckSubmissions = pendingSubmissions.filter(
+            (submission) => new Date(submission.submitted_at) < oneHourAgo
+          );
+
+          if (stuckSubmissions.length > 0) {
+            toast.warning(
+              `Обнаружено ${stuckSubmissions.length} работ в статусе "На проверке" более 1 часа. Используйте кнопку "Очистка" для решения проблемы.`,
+              { duration: 10000 }
+            );
+          }
+        }
+      }
     } catch (error) {
       console.error("Error loading data:", error);
       toast.error("Ошибка загрузки данных");
@@ -672,7 +700,47 @@ export function AdminDashboard() {
     score: number,
     feedback: string
   ) => {
+    // Prevent multiple submissions
+    if (gradingInProgress[submissionId]) {
+      toast.warning("Оценка уже выставляется...");
+      return;
+    }
+
     try {
+      setGradingInProgress((prev) => ({ ...prev, [submissionId]: true }));
+
+      // Validate score
+      const submission = submissions.find((s) => s.id === submissionId);
+      const assignment = assignments.find(
+        (a) => a.id === submission?.assignment_id
+      );
+
+      if (!submission) {
+        throw new Error("Работа не найдена");
+      }
+
+      if (!assignment) {
+        throw new Error("Задание не найдено");
+      }
+
+      if (score < 0 || score > assignment.max_score) {
+        throw new Error(`Оценка должна быть от 0 до ${assignment.max_score}`);
+      }
+
+      // Check if submission is already graded to prevent race conditions
+      const { data: currentSubmission, error: fetchError } = await supabase
+        .from("submissions")
+        .select("status")
+        .eq("id", submissionId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      if (currentSubmission.status === "graded") {
+        toast.warning("Работа уже проверена");
+        return;
+      }
+
       const { error } = await supabase
         .from("submissions")
         .update({
@@ -680,15 +748,47 @@ export function AdminDashboard() {
           feedback,
           status: "graded",
         })
-        .eq("id", submissionId);
+        .eq("id", submissionId)
+        .eq("status", "pending"); // Additional safety check
 
       if (error) throw error;
 
       toast.success("Оценка выставлена");
-      loadData();
+
+      // Optimistic update
+      setSubmissions((prev) =>
+        prev.map((s) =>
+          s.id === submissionId
+            ? { ...s, score, feedback, status: "graded" as const }
+            : s
+        )
+      );
+
+      // Clear temp values
+      setTempScores((prev) => {
+        const newScores = { ...prev };
+        delete newScores[submissionId];
+        return newScores;
+      });
+      setTempFeedbacks((prev) => {
+        const newFeedbacks = { ...prev };
+        delete newFeedbacks[submissionId];
+        return newFeedbacks;
+      });
     } catch (error) {
       console.error("Error grading submission:", error);
-      toast.error("Ошибка выставления оценки");
+      const errorMessage =
+        error instanceof Error ? error.message : "Ошибка выставления оценки";
+      toast.error(errorMessage);
+
+      // Reload data on error to ensure consistency
+      loadData();
+    } finally {
+      setGradingInProgress((prev) => {
+        const newState = { ...prev };
+        delete newState[submissionId];
+        return newState;
+      });
     }
   };
 
@@ -1247,6 +1347,196 @@ export function AdminDashboard() {
       toast.error(error instanceof Error ? error.message : "Ошибка ИИ-анализа");
     } finally {
       setAiEvaluationLoading((prev) => ({ ...prev, [submissionId]: false }));
+    }
+  };
+
+  // Function to detect and fix stuck submissions
+  const detectStuckSubmissions = async () => {
+    try {
+      const { data: allSubmissions, error } = await supabase
+        .from("submissions")
+        .select("*")
+        .eq("status", "pending");
+
+      if (error) throw error;
+
+      if (!allSubmissions || allSubmissions.length === 0) {
+        return { duplicates: [], oldSubmissions: [] };
+      }
+
+      // Group by student_id and assignment_id to find duplicates
+      const submissionGroups = allSubmissions.reduce((acc, submission) => {
+        const key = `${submission.student_id}-${submission.assignment_id}`;
+        if (!acc[key]) {
+          acc[key] = [];
+        }
+        acc[key].push(submission);
+        return acc;
+      }, {} as Record<string, Submission[]>);
+
+      // Find duplicates (more than one pending submission per student-assignment pair)
+      const duplicates = Object.values(submissionGroups)
+        .filter((group) => group.length > 1)
+        .flat();
+
+      // Find old submissions (older than 30 days and still pending)
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      const oldSubmissions = allSubmissions.filter(
+        (submission) => new Date(submission.submitted_at) < thirtyDaysAgo
+      );
+
+      return { duplicates, oldSubmissions };
+    } catch (error) {
+      console.error("Error detecting stuck submissions:", error);
+      return { duplicates: [], oldSubmissions: [] };
+    }
+  };
+
+  const cleanupStuckSubmissions = async () => {
+    try {
+      const { duplicates, oldSubmissions } = await detectStuckSubmissions();
+
+      // Also check for potentially stuck submissions (more than 1 hour old and still pending)
+      const { data: allPendingSubmissions, error: pendingError } =
+        await supabase.from("submissions").select("*").eq("status", "pending");
+
+      if (pendingError) throw pendingError;
+
+      const oneHourAgo = new Date();
+      oneHourAgo.setHours(oneHourAgo.getHours() - 1);
+
+      const potentiallyStuck = (allPendingSubmissions || []).filter(
+        (submission) => new Date(submission.submitted_at) < oneHourAgo
+      );
+
+      let cleanedCount = 0;
+      let actionsTaken = [];
+
+      // Handle duplicates - keep the latest one, remove others
+      if (duplicates.length > 0) {
+        const shouldCleanDuplicates = confirm(
+          `Найдено ${duplicates.length} дублированных работ. Удалить дубликаты (оставить только последние)?`
+        );
+
+        if (shouldCleanDuplicates) {
+          const submissionGroups = duplicates.reduce((acc, submission) => {
+            const key = `${submission.student_id}-${submission.assignment_id}`;
+            if (!acc[key]) {
+              acc[key] = [];
+            }
+            acc[key].push(submission);
+            return acc;
+          }, {} as Record<string, Submission[]>);
+
+          for (const group of Object.values(submissionGroups)) {
+            if (group.length > 1) {
+              // Sort by submission time, keep the latest
+              group.sort(
+                (a, b) =>
+                  new Date(b.submitted_at).getTime() -
+                  new Date(a.submitted_at).getTime()
+              );
+              const toDelete = group.slice(1); // Remove all but the latest
+
+              for (const submission of toDelete) {
+                const { error } = await supabase
+                  .from("submissions")
+                  .delete()
+                  .eq("id", submission.id);
+
+                if (!error) {
+                  cleanedCount++;
+                }
+              }
+            }
+          }
+          actionsTaken.push(`Удалено ${cleanedCount} дубликатов`);
+        }
+      }
+
+      // Handle old submissions (older than 30 days and still pending)
+      if (oldSubmissions.length > 0) {
+        const shouldCleanOld = confirm(
+          `Найдено ${oldSubmissions.length} очень старых работ (более 30 дней). Удалить их?`
+        );
+
+        if (shouldCleanOld) {
+          for (const submission of oldSubmissions) {
+            const { error } = await supabase
+              .from("submissions")
+              .delete()
+              .eq("id", submission.id);
+
+            if (!error) {
+              cleanedCount++;
+            }
+          }
+          actionsTaken.push(`Удалено ${oldSubmissions.length} старых работ`);
+        }
+      }
+
+      // Show info about potentially stuck submissions
+      if (potentiallyStuck.length > 0) {
+        const studentNames = await Promise.all(
+          potentiallyStuck.slice(0, 5).map(async (submission) => {
+            const student = students.find(
+              (s) => s.id === submission.student_id
+            );
+            const assignment = assignments.find(
+              (a) => a.id === submission.assignment_id
+            );
+            return `${student?.last_name} ${student?.first_name} - "${assignment?.title}"`;
+          })
+        );
+
+        const shouldShowMore =
+          potentiallyStuck.length > 5
+            ? `\n...и ещё ${potentiallyStuck.length - 5} работ`
+            : "";
+
+        const shouldForceGrade = confirm(
+          `Найдено ${
+            potentiallyStuck.length
+          } работ, которые висят в статусе "На проверке" более 1 часа:\n\n${studentNames.join(
+            "\n"
+          )}${shouldShowMore}\n\nПеренести все эти работы в архив проверенных с оценкой 0?`
+        );
+
+        if (shouldForceGrade) {
+          for (const submission of potentiallyStuck) {
+            const { error } = await supabase
+              .from("submissions")
+              .update({
+                score: 0,
+                feedback: "Автоматически проверено (работа зависла в системе)",
+                status: "graded",
+              })
+              .eq("id", submission.id);
+
+            if (!error) {
+              cleanedCount++;
+            }
+          }
+          actionsTaken.push(
+            `Обработано ${potentiallyStuck.length} зависших работ`
+          );
+        }
+      }
+
+      if (actionsTaken.length > 0) {
+        toast.success(`Очистка завершена: ${actionsTaken.join(", ")}`);
+        loadData(); // Reload data after cleanup
+      } else {
+        toast.info("Никаких действий не было выполнено");
+      }
+
+      return cleanedCount;
+    } catch (error) {
+      console.error("Error cleaning stuck submissions:", error);
+      toast.error("Ошибка очистки зависших работ");
+      return 0;
     }
   };
 
@@ -2126,6 +2416,16 @@ export function AdminDashboard() {
 
                 <Button
                   variant="outline"
+                  onClick={cleanupStuckSubmissions}
+                  className="shrink-0"
+                  title="Очистить зависшие и дублированные работы"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  {isLargeScreen ? "Очистка" : ""}
+                </Button>
+
+                <Button
+                  variant="outline"
                   onClick={() => setShowArchive(!showArchive)}
                   className="shrink-0"
                 >
@@ -2304,22 +2604,23 @@ export function AdminDashboard() {
                                     score,
                                     feedback
                                   );
-                                  // Clear temp values after saving
-                                  setTempScores((prev) => {
-                                    const newScores = { ...prev };
-                                    delete newScores[submission.id];
-                                    return newScores;
-                                  });
-                                  setTempFeedbacks((prev) => {
-                                    const newFeedbacks = { ...prev };
-                                    delete newFeedbacks[submission.id];
-                                    return newFeedbacks;
-                                  });
                                 }
                               }}
+                              disabled={
+                                gradingInProgress[submission.id] || false
+                              }
                             >
-                              <Save className="w-4 h-4 mr-2" />
-                              Сохранить оценку
+                              {gradingInProgress[submission.id] ? (
+                                <>
+                                  <div className="w-4 h-4 mr-2 border-2 border-gray-300 border-t-white rounded-full animate-spin" />
+                                  Сохранение...
+                                </>
+                              ) : (
+                                <>
+                                  <Save className="w-4 h-4 mr-2" />
+                                  Сохранить оценку
+                                </>
+                              )}
                             </Button>
                           </div>
                         )}
