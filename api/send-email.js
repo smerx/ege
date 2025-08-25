@@ -18,6 +18,18 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
+  // Блокируем отправку писем вне продакшена (Vercel production)
+  const vercelEnv = process.env.VERCEL_ENV || process.env.NODE_ENV || "";
+  const isProduction = vercelEnv === "production";
+  if (!isProduction) {
+    return res.status(200).json({
+      success: true,
+      skipped: true,
+      reason: "Email sending is disabled outside production environment",
+      env: vercelEnv,
+    });
+  }
+
   // Диагностика
   console.log("API Key exists:", !!process.env.RESEND_API_KEY);
   console.log("Raw request body type:", typeof req.body);
