@@ -16,11 +16,16 @@ export interface EmailNotificationRequest {
 export async function sendEmailNotification(
   request: EmailNotificationRequest
 ): Promise<boolean> {
+  console.log("=== CLIENT EMAIL START ===");
+  console.log("Request:", JSON.stringify(request, null, 2));
+  
   // Отправляем письма только на продакшене (боевой домен)
   try {
     if (typeof window !== "undefined") {
       const hostname = window.location.hostname;
       const isProdDomain = hostname === "ege100.vercel.app";
+      console.log("Environment check:", { hostname, isProdDomain });
+      
       if (!isProdDomain) {
         console.log(
           "Email notification skipped: non-production environment",
@@ -29,11 +34,12 @@ export async function sendEmailNotification(
         return true; // тихо пропускаем вне продакшена
       }
     }
-  } catch (_) {
-    // ignore any window access issues
+  } catch (err) {
+    console.error("Window access error:", err);
   }
 
   try {
+    console.log("Sending POST request to /api/send-email...");
     const response = await fetch("/api/send-email", {
       method: "POST",
       headers: {
@@ -42,17 +48,33 @@ export async function sendEmailNotification(
       body: JSON.stringify(request),
     });
 
+    console.log("Response status:", response.status);
+    console.log("Response ok:", response.ok);
+    
+    let responseData;
+    try {
+      responseData = await response.json();
+      console.log("Response data:", responseData);
+    } catch (jsonError) {
+      console.error("Failed to parse response JSON:", jsonError);
+      responseData = {};
+    }
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error("Email API error:", errorData);
+      console.error("Email API error:", {
+        status: response.status,
+        statusText: response.statusText,
+        data: responseData
+      });
       return false;
     }
 
-    const result = await response.json().catch(() => ({}));
-    console.log("Email sent successfully:", result);
+    console.log("Email sent successfully:", responseData);
     return true;
   } catch (error) {
     console.error("Email notification error:", error);
     return false;
+  } finally {
+    console.log("=== CLIENT EMAIL END ===");
   }
 }

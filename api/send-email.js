@@ -4,24 +4,39 @@ const { Resend } = require("resend");
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 module.exports = async function handler(req, res) {
+  console.log("=== EMAIL API START ===");
+  console.log("Method:", req.method);
+  console.log("Headers:", req.headers);
+  console.log("Environment:", {
+    VERCEL_ENV: process.env.VERCEL_ENV,
+    NODE_ENV: process.env.NODE_ENV,
+    hasApiKey: !!process.env.RESEND_API_KEY,
+    apiKeyPrefix: process.env.RESEND_API_KEY ? process.env.RESEND_API_KEY.substring(0, 10) + "..." : "none"
+  });
+
   // Устанавливаем CORS заголовки
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
   if (req.method === "OPTIONS") {
+    console.log("OPTIONS request handled");
     res.status(200).end();
     return;
   }
 
   if (req.method !== "POST") {
+    console.log("Method not allowed:", req.method);
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  // Блокируем отправку писем вне продакшена (Vercel production)
+  // Диагностика окружения
   const vercelEnv = process.env.VERCEL_ENV || process.env.NODE_ENV || "";
   const isProduction = vercelEnv === "production";
+  console.log("Environment check:", { vercelEnv, isProduction });
+  
   if (!isProduction) {
+    console.log("Skipping email in non-production environment");
     return res.status(200).json({
       success: true,
       skipped: true,
@@ -30,29 +45,50 @@ module.exports = async function handler(req, res) {
     });
   }
 
-  // Диагностика
-  console.log("API Key exists:", !!process.env.RESEND_API_KEY);
+  // Проверяем API ключ
+  if (!process.env.RESEND_API_KEY) {
+    console.error("RESEND_API_KEY is missing!");
+    return res.status(500).json({ 
+      error: "Email service configuration missing",
+      success: false 
+    });
+  }
+
+  // Диагностика тела запроса
   console.log("Raw request body type:", typeof req.body);
+  console.log("Raw request body:", req.body);
 
   // Пытаемся безопасно распарсить тело запроса
   let body = req.body;
   if (!body || typeof body === "string") {
     try {
       body = JSON.parse(body || "{}");
+      console.log("Successfully parsed JSON body");
     } catch (e) {
       console.error("Failed to parse JSON body:", e);
-      return res.status(400).json({ error: "Invalid JSON body" });
+      return res.status(400).json({ error: "Invalid JSON body", success: false });
     }
   }
-  console.log("Parsed request body:", body);
+  console.log("Parsed request body:", JSON.stringify(body, null, 2));
 
   try {
     const { type, data } = body;
+    console.log("Processing email type:", type);
+    console.log("Email data:", JSON.stringify(data, null, 2));
+
+    if (!type || !data) {
+      console.error("Missing type or data in request");
+      return res.status(400).json({ 
+        error: "Missing required fields: type, data",
+        success: false 
+      });
+    }
 
     let emailResult;
 
     switch (type) {
       case "new_submission":
+        console.log("Sending new submission email...");
         emailResult = await sendNewSubmissionEmail(
           data.adminEmail,
           data.studentName,
@@ -61,6 +97,7 @@ module.exports = async function handler(req, res) {
         break;
 
       case "submission_graded":
+        console.log("Sending graded submission email...");
         emailResult = await sendGradedSubmissionEmail(
           data.studentEmail,
           data.assignmentTitle,
@@ -71,19 +108,38 @@ module.exports = async function handler(req, res) {
         break;
 
       default:
-        return res.status(400).json({ error: "Invalid notification type" });
+        console.error("Invalid notification type:", type);
+        return res.status(400).json({ 
+          error: "Invalid notification type: " + type,
+          success: false 
+        });
     }
 
+    console.log("Email result:", emailResult);
+
     if (emailResult.success) {
-      res
-        .status(200)
-        .json({ success: true, message: "Email sent successfully" });
+      console.log("Email sent successfully!");
+      res.status(200).json({ 
+        success: true, 
+        message: "Email sent successfully",
+        data: emailResult.data 
+      });
     } else {
-      res.status(500).json({ success: false, error: emailResult.error });
+      console.error("Email sending failed:", emailResult.error);
+      res.status(500).json({ 
+        success: false, 
+        error: emailResult.error 
+      });
     }
   } catch (error) {
     console.error("Email API error:", error);
-    res.status(500).json({ error: "Internal server error" });
+    console.error("Error stack:", error.stack);
+    res.status(500).json({ 
+      error: "Internal server error: " + error.message,
+      success: false 
+    });
+  } finally {
+    console.log("=== EMAIL API END ===");
   }
 };
 
@@ -93,7 +149,16 @@ async function sendNewSubmissionEmail(
   studentName,
   assignmentTitle
 ) {
+  console.log("sendNewSubmissionEmail called with:", { adminEmail, studentName, assignmentTitle });
+  
+  if (!adminEmail || !studentName || !assignmentTitle) {
+    const error = "Missing required parameters for new submission email";
+    console.error(error);
+    return { success: false, error };
+  }
+
   try {
+    console.log("Attempting to send email via Resend...");
     const { data, error } = await resend.emails.send({
       from: "Сайт преподавателя <onboarding@resend.dev>",
       to: adminEmail,
@@ -102,14 +167,14 @@ async function sendNewSubmissionEmail(
     });
 
     if (error) {
-      console.error("Error sending new submission email:", error);
-      return { success: false, error: error.message };
+      console.error("Resend API error:", error);
+      return { success: false, error: error.message || JSON.stringify(error) };
     }
 
-    console.log("New submission email sent:", data);
+    console.log("New submission email sent successfully:", data);
     return { success: true, data };
   } catch (error) {
-    console.error("Error sending email:", error);
+    console.error("Exception in sendNewSubmissionEmail:", error);
     return { success: false, error: error.message };
   }
 }
@@ -122,7 +187,18 @@ async function sendGradedSubmissionEmail(
   maxScore,
   feedback
 ) {
+  console.log("sendGradedSubmissionEmail called with:", { 
+    studentEmail, assignmentTitle, score, maxScore, feedback 
+  });
+  
+  if (!studentEmail || !assignmentTitle || score === undefined || maxScore === undefined) {
+    const error = "Missing required parameters for graded submission email";
+    console.error(error);
+    return { success: false, error };
+  }
+
   try {
+    console.log("Attempting to send graded email via Resend...");
     const { data, error } = await resend.emails.send({
       from: "Сайт преподавателя <onboarding@resend.dev>",
       to: studentEmail,
@@ -136,14 +212,14 @@ async function sendGradedSubmissionEmail(
     });
 
     if (error) {
-      console.error("Error sending graded submission email:", error);
-      return { success: false, error: error.message };
+      console.error("Resend API error:", error);
+      return { success: false, error: error.message || JSON.stringify(error) };
     }
 
-    console.log("Graded submission email sent:", data);
+    console.log("Graded submission email sent successfully:", data);
     return { success: true, data };
   } catch (error) {
-    console.error("Error sending email:", error);
+    console.error("Exception in sendGradedSubmissionEmail:", error);
     return { success: false, error: error.message };
   }
 }
