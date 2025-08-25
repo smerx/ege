@@ -161,9 +161,9 @@ async function sendNewSubmissionEmail(
     console.log("Attempting to send email via Resend...");
     const { data, error } = await resend.emails.send({
       from: "Сайт преподавателя <onboarding@resend.dev>",
-      to: adminEmail,
-      subject: "📝 Новая работа на проверке",
-      html: getNewSubmissionTemplate(studentName, assignmentTitle),
+      to: "onboarding@resend.dev", // Временно используем тестовый email для Resend sandbox
+      subject: `📝 Новая работа на проверке от ${studentName}`,
+      html: getNewSubmissionTemplate(studentName, assignmentTitle, adminEmail),
     });
 
     if (error) {
@@ -201,13 +201,14 @@ async function sendGradedSubmissionEmail(
     console.log("Attempting to send graded email via Resend...");
     const { data, error } = await resend.emails.send({
       from: "Сайт преподавателя <onboarding@resend.dev>",
-      to: studentEmail,
-      subject: "✅ Работа проверена!",
+      to: "onboarding@resend.dev", // Временно используем тестовый email для Resend sandbox
+      subject: `✅ Работа проверена! ${assignmentTitle}`,
       html: getGradedSubmissionTemplate(
         assignmentTitle,
         score,
         maxScore,
-        feedback
+        feedback,
+        studentEmail
       ),
     });
 
@@ -225,7 +226,7 @@ async function sendGradedSubmissionEmail(
 }
 
 // Шаблон для уведомления о новой работе
-function getNewSubmissionTemplate(studentName, assignmentTitle) {
+function getNewSubmissionTemplate(studentName, assignmentTitle, adminEmail = '') {
   return `
     <!DOCTYPE html>
     <html>
@@ -250,6 +251,7 @@ function getNewSubmissionTemplate(studentName, assignmentTitle) {
             <p>Здравствуйте!</p>
             <p><strong>${studentName}</strong> отправил(а) работу на проверку:</p>
             <p><strong>Задание:</strong> ${assignmentTitle}</p>
+            <p><strong>Email администратора (оригинальный):</strong> ${adminEmail || 'не указан'}</p>
             <p>Перейдите в админ-панель для проверки работы:</p>
             <a href="https://ege100.vercel.app" class="button">Перейти к проверке</a>
           </div>
@@ -268,7 +270,8 @@ function getGradedSubmissionTemplate(
   assignmentTitle,
   score,
   maxScore,
-  feedback
+  feedback,
+  studentEmail = ''
 ) {
   const percentage = Math.round((score / maxScore) * 100);
   const gradeEmoji = percentage >= 80 ? "🎉" : percentage >= 60 ? "👍" : "📚";
@@ -299,6 +302,7 @@ function getGradedSubmissionTemplate(
           <div class="content">
             <p>Здравствуйте!</p>
             <p>Ваша работа по заданию <strong>"${assignmentTitle}"</strong> проверена:</p>
+            <p><strong>Email студента (оригинальный):</strong> ${studentEmail || 'не указан'}</p>
             
             <div class="score">
               <div class="score-value">${gradeEmoji} ${score} из ${maxScore} баллов</div>
