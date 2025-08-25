@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { supabase } from "../../lib/supabase";
+import { sendEmailNotification } from "../../pages/api/send-email";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
@@ -183,6 +184,40 @@ export function StudentDashboard() {
       if (error) throw error;
 
       toast.success("Задание отправлено на проверку");
+
+      // Отправить email уведомление администраторам
+      try {
+        // Получить всех администраторов
+        const { data: admins, error: adminError } = await supabase
+          .from("users")
+          .select("email")
+          .eq("role", "admin");
+
+        if (!adminError && admins) {
+          const studentName = `${user.firstName} ${user.lastName}`;
+
+          // Отправить уведомление каждому администратору
+          for (const admin of admins) {
+            if (admin.email) {
+              await sendEmailNotification({
+                type: "new_submission",
+                data: {
+                  adminEmail: admin.email,
+                  studentName,
+                  assignmentTitle: selectedAssignment.title,
+                },
+              });
+            }
+          }
+          console.log(
+            `Email notifications sent to ${admins.length} administrators`
+          );
+        }
+      } catch (emailError) {
+        console.error("Failed to send email notifications:", emailError);
+        // Не прерываем процесс если email не отправились
+      }
+
       setSubmissionText("");
       setIsSubmitDialogOpen(false);
       setSelectedAssignment(null);

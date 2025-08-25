@@ -6,6 +6,7 @@ import {
   cleanStudentCode,
   extractCodeFromSubmission,
 } from "../../lib/codeUtils";
+import { sendEmailNotification } from "../../pages/api/send-email";
 import {
   Card,
   CardContent,
@@ -754,6 +755,27 @@ export function AdminDashboard() {
       if (error) throw error;
 
       toast.success("Оценка выставлена");
+
+      // Отправить email уведомление студенту
+      try {
+        const student = students.find((s) => s.id === submission.student_id);
+        if (student?.email) {
+          await sendEmailNotification({
+            type: "submission_graded",
+            data: {
+              studentEmail: student.email,
+              assignmentTitle: assignment.title,
+              score,
+              maxScore: assignment.max_score,
+              feedback: feedback || undefined,
+            },
+          });
+          console.log(`Email notification sent to ${student.email}`);
+        }
+      } catch (emailError) {
+        console.error("Failed to send email notification:", emailError);
+        // Не прерываем процесс если email не отправился
+      }
 
       // Optimistic update
       setSubmissions((prev) =>
