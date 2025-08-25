@@ -18,6 +18,10 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
+  // Диагностика
+  console.log("API Key exists:", !!process.env.RESEND_API_KEY);
+  console.log("Request body:", req.body);
+
   try {
     const { type, data } = req.body;
 
