@@ -1,17 +1,26 @@
-// Vercel API функция для отправки email (CommonJS)
-const { Resend } = require("resend");
+// Vercel API функция для отправки email через Gmail SMTP (CommonJS)
+const nodemailer = require("nodemailer");
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Настройка Gmail транспорта
+function createGmailTransporter() {
+  return nodemailer.createTransporter({
+    service: 'gmail',
+    auth: {
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_PASS, // Пароль приложения (16 символов)
+    },
+  });
+}
 
 module.exports = async function handler(req, res) {
-  console.log("=== EMAIL API START ===");
+  console.log("=== GMAIL EMAIL API START ===");
   console.log("Method:", req.method);
-  console.log("Headers:", req.headers);
   console.log("Environment:", {
     VERCEL_ENV: process.env.VERCEL_ENV,
     NODE_ENV: process.env.NODE_ENV,
-    hasApiKey: !!process.env.RESEND_API_KEY,
-    apiKeyPrefix: process.env.RESEND_API_KEY ? process.env.RESEND_API_KEY.substring(0, 10) + "..." : "none"
+    hasGmailUser: !!process.env.GMAIL_USER,
+    hasGmailPass: !!process.env.GMAIL_PASS,
+    gmailUser: process.env.GMAIL_USER || "not set"
   });
 
   // Устанавливаем CORS заголовки
@@ -45,11 +54,14 @@ module.exports = async function handler(req, res) {
     });
   }
 
-  // Проверяем API ключ
-  if (!process.env.RESEND_API_KEY) {
-    console.error("RESEND_API_KEY is missing!");
+  // Проверяем Gmail настройки
+  if (!process.env.GMAIL_USER || !process.env.GMAIL_PASS) {
+    console.error("Gmail credentials missing!", {
+      hasUser: !!process.env.GMAIL_USER,
+      hasPass: !!process.env.GMAIL_PASS
+    });
     return res.status(500).json({ 
-      error: "Email service configuration missing",
+      error: "Gmail service configuration missing",
       success: false 
     });
   }
@@ -139,7 +151,7 @@ module.exports = async function handler(req, res) {
       success: false 
     });
   } finally {
-    console.log("=== EMAIL API END ===");
+    console.log("=== GMAIL EMAIL API END ===");
   }
 };
 
@@ -158,21 +170,22 @@ async function sendNewSubmissionEmail(
   }
 
   try {
-    console.log("Attempting to send email via Resend...");
-    const { data, error } = await resend.emails.send({
-      from: "Сайт преподавателя <onboarding@resend.dev>",
-      to: "onboarding@resend.dev", // Временно используем тестовый email для Resend sandbox
-      subject: `📝 Новая работа на проверке от ${studentName}`,
+    const transporter = createGmailTransporter();
+    console.log("Gmail transporter created, attempting to send email...");
+    
+    const mailOptions = {
+      from: `"Сайт преподавателя" <${process.env.GMAIL_USER}>`,
+      to: adminEmail,
+      subject: `📝 Новая работа от ${studentName}`,
       html: getNewSubmissionTemplate(studentName, assignmentTitle, adminEmail),
-    });
-
-    if (error) {
-      console.error("Resend API error:", error);
-      return { success: false, error: error.message || JSON.stringify(error) };
-    }
-
-    console.log("New submission email sent successfully:", data);
-    return { success: true, data };
+    };
+    
+    console.log("Email options:", JSON.stringify(mailOptions, null, 2));
+    
+    const info = await transporter.sendMail(mailOptions);
+    
+    console.log("Gmail email sent successfully:", info);
+    return { success: true, data: info };
   } catch (error) {
     console.error("Exception in sendNewSubmissionEmail:", error);
     return { success: false, error: error.message };
@@ -198,27 +211,27 @@ async function sendGradedSubmissionEmail(
   }
 
   try {
-    console.log("Attempting to send graded email via Resend...");
-    const { data, error } = await resend.emails.send({
-      from: "Сайт преподавателя <onboarding@resend.dev>",
-      to: "onboarding@resend.dev", // Временно используем тестовый email для Resend sandbox
+    const transporter = createGmailTransporter();
+    console.log("Gmail transporter created, attempting to send graded email...");
+    
+    const mailOptions = {
+      from: `"Сайт преподавателя" <${process.env.GMAIL_USER}>`,
+      to: studentEmail,
       subject: `✅ Работа проверена! ${assignmentTitle}`,
       html: getGradedSubmissionTemplate(
         assignmentTitle,
         score,
         maxScore,
-        feedback,
-        studentEmail
+        feedback
       ),
-    });
-
-    if (error) {
-      console.error("Resend API error:", error);
-      return { success: false, error: error.message || JSON.stringify(error) };
-    }
-
-    console.log("Graded submission email sent successfully:", data);
-    return { success: true, data };
+    };
+    
+    console.log("Graded email options:", JSON.stringify(mailOptions, null, 2));
+    
+    const info = await transporter.sendMail(mailOptions);
+    
+    console.log("Gmail graded email sent successfully:", info);
+    return { success: true, data: info };
   } catch (error) {
     console.error("Exception in sendGradedSubmissionEmail:", error);
     return { success: false, error: error.message };
@@ -226,7 +239,7 @@ async function sendGradedSubmissionEmail(
 }
 
 // Шаблон для уведомления о новой работе
-function getNewSubmissionTemplate(studentName, assignmentTitle, adminEmail = '') {
+function getNewSubmissionTemplate(studentName, assignmentTitle, adminEmail) {
   return `
     <!DOCTYPE html>
     <html>
@@ -240,6 +253,7 @@ function getNewSubmissionTemplate(studentName, assignmentTitle, adminEmail = '')
           .content { background: #f9fafb; padding: 20px; border-radius: 0 0 8px 8px; }
           .button { display: inline-block; background: #4f46e5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 10px 0; }
           .footer { text-align: center; margin-top: 20px; font-size: 12px; color: #666; }
+          .info { background: #e3f2fd; padding: 10px; border-radius: 4px; margin: 10px 0; }
         </style>
       </head>
       <body>
@@ -251,13 +265,18 @@ function getNewSubmissionTemplate(studentName, assignmentTitle, adminEmail = '')
             <p>Здравствуйте!</p>
             <p><strong>${studentName}</strong> отправил(а) работу на проверку:</p>
             <p><strong>Задание:</strong> ${assignmentTitle}</p>
-            <p><strong>Email администратора (оригинальный):</strong> ${adminEmail || 'не указан'}</p>
+            
+            <div class="info">
+              <strong>Получатель:</strong> ${adminEmail}
+            </div>
+            
             <p>Перейдите в админ-панель для проверки работы:</p>
             <a href="https://ege100.vercel.app" class="button">Перейти к проверке</a>
           </div>
           <div class="footer">
             <p>Сайт преподавателя информатики<br>
-            Дмитрий Андреевич Тепляшин</p>
+            Дмитрий Андреевич Тепляшин<br>
+            Отправлено через Gmail: ${process.env.GMAIL_USER || 'email не настроен'}</p>
           </div>
         </div>
       </body>
@@ -270,8 +289,7 @@ function getGradedSubmissionTemplate(
   assignmentTitle,
   score,
   maxScore,
-  feedback,
-  studentEmail = ''
+  feedback
 ) {
   const percentage = Math.round((score / maxScore) * 100);
   const gradeEmoji = percentage >= 80 ? "🎉" : percentage >= 60 ? "👍" : "📚";
@@ -302,7 +320,6 @@ function getGradedSubmissionTemplate(
           <div class="content">
             <p>Здравствуйте!</p>
             <p>Ваша работа по заданию <strong>"${assignmentTitle}"</strong> проверена:</p>
-            <p><strong>Email студента (оригинальный):</strong> ${studentEmail || 'не указан'}</p>
             
             <div class="score">
               <div class="score-value">${gradeEmoji} ${score} из ${maxScore} баллов</div>
@@ -325,7 +342,8 @@ function getGradedSubmissionTemplate(
           </div>
           <div class="footer">
             <p>Сайт преподавателя информатики<br>
-            Дмитрий Андреевич Тепляшин</p>
+            Дмитрий Андреевич Тепляшин<br>
+            Отправлено через Gmail: ${process.env.GMAIL_USER || 'email не настроен'}</p>
           </div>
         </div>
       </body>
