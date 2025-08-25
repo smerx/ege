@@ -1,9 +1,9 @@
-// Vercel API функция для отправки email
-import { Resend } from "resend";
+// Vercel API функция для отправки email (CommonJS)
+const { Resend } = require("resend");
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // Устанавливаем CORS заголовки
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -20,10 +20,22 @@ export default async function handler(req, res) {
 
   // Диагностика
   console.log("API Key exists:", !!process.env.RESEND_API_KEY);
-  console.log("Request body:", req.body);
+  console.log("Raw request body type:", typeof req.body);
+
+  // Пытаемся безопасно распарсить тело запроса
+  let body = req.body;
+  if (!body || typeof body === "string") {
+    try {
+      body = JSON.parse(body || "{}");
+    } catch (e) {
+      console.error("Failed to parse JSON body:", e);
+      return res.status(400).json({ error: "Invalid JSON body" });
+    }
+  }
+  console.log("Parsed request body:", body);
 
   try {
-    const { type, data } = req.body;
+    const { type, data } = body;
 
     let emailResult;
 
@@ -61,7 +73,7 @@ export default async function handler(req, res) {
     console.error("Email API error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
-}
+};
 
 // Функция отправки уведомления о новой работе
 async function sendNewSubmissionEmail(
