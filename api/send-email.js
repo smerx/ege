@@ -4,7 +4,7 @@ const nodemailer = require("nodemailer");
 // Настройка Yandex Mail транспорта
 function createYandexTransporter() {
   return nodemailer.createTransport({
-    host: 'smtp.yandex.ru',
+    host: "smtp.yandex.ru",
     port: 465,
     secure: true, // true для 465, false для других портов
     auth: {
@@ -22,7 +22,7 @@ module.exports = async function handler(req, res) {
     NODE_ENV: process.env.NODE_ENV,
     hasYandexUser: !!process.env.YANDEX_USER,
     hasYandexPass: !!process.env.YANDEX_PASS,
-    yandexUser: process.env.YANDEX_USER || "not set"
+    yandexUser: process.env.YANDEX_USER || "not set",
   });
 
   // Устанавливаем CORS заголовки
@@ -45,7 +45,7 @@ module.exports = async function handler(req, res) {
   const vercelEnv = process.env.VERCEL_ENV || process.env.NODE_ENV || "";
   const isProduction = vercelEnv === "production";
   console.log("Environment check:", { vercelEnv, isProduction });
-  
+
   if (!isProduction) {
     console.log("Skipping email in non-production environment");
     return res.status(200).json({
@@ -60,11 +60,11 @@ module.exports = async function handler(req, res) {
   if (!process.env.YANDEX_USER || !process.env.YANDEX_PASS) {
     console.error("Yandex credentials missing!", {
       hasUser: !!process.env.YANDEX_USER,
-      hasPass: !!process.env.YANDEX_PASS
+      hasPass: !!process.env.YANDEX_PASS,
     });
-    return res.status(500).json({ 
+    return res.status(500).json({
       error: "Yandex Mail service configuration missing",
-      success: false 
+      success: false,
     });
   }
 
@@ -80,7 +80,9 @@ module.exports = async function handler(req, res) {
       console.log("Successfully parsed JSON body");
     } catch (e) {
       console.error("Failed to parse JSON body:", e);
-      return res.status(400).json({ error: "Invalid JSON body", success: false });
+      return res
+        .status(400)
+        .json({ error: "Invalid JSON body", success: false });
     }
   }
   console.log("Parsed request body:", JSON.stringify(body, null, 2));
@@ -92,9 +94,9 @@ module.exports = async function handler(req, res) {
 
     if (!type || !data) {
       console.error("Missing type or data in request");
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: "Missing required fields: type, data",
-        success: false 
+        success: false,
       });
     }
 
@@ -123,9 +125,9 @@ module.exports = async function handler(req, res) {
 
       default:
         console.error("Invalid notification type:", type);
-        return res.status(400).json({ 
+        return res.status(400).json({
           error: "Invalid notification type: " + type,
-          success: false 
+          success: false,
         });
     }
 
@@ -133,24 +135,24 @@ module.exports = async function handler(req, res) {
 
     if (emailResult.success) {
       console.log("Email sent successfully!");
-      res.status(200).json({ 
-        success: true, 
+      res.status(200).json({
+        success: true,
         message: "Email sent successfully",
-        data: emailResult.data 
+        data: emailResult.data,
       });
     } else {
       console.error("Email sending failed:", emailResult.error);
-      res.status(500).json({ 
-        success: false, 
-        error: emailResult.error 
+      res.status(500).json({
+        success: false,
+        error: emailResult.error,
       });
     }
   } catch (error) {
     console.error("Email API error:", error);
     console.error("Error stack:", error.stack);
-    res.status(500).json({ 
+    res.status(500).json({
       error: "Internal server error: " + error.message,
-      success: false 
+      success: false,
     });
   } finally {
     console.log("=== YANDEX EMAIL API END ===");
@@ -163,8 +165,12 @@ async function sendNewSubmissionEmail(
   studentName,
   assignmentTitle
 ) {
-  console.log("sendNewSubmissionEmail called with:", { adminEmail, studentName, assignmentTitle });
-  
+  console.log("sendNewSubmissionEmail called with:", {
+    adminEmail,
+    studentName,
+    assignmentTitle,
+  });
+
   if (!adminEmail || !studentName || !assignmentTitle) {
     const error = "Missing required parameters for new submission email";
     console.error(error);
@@ -174,18 +180,18 @@ async function sendNewSubmissionEmail(
   try {
     const transporter = createYandexTransporter();
     console.log("Yandex transporter created, attempting to send email...");
-    
+
     const mailOptions = {
       from: `"Сайт преподавателя" <${process.env.YANDEX_USER}>`,
       to: adminEmail,
       subject: `📝 Новая работа от ${studentName}`,
       html: getNewSubmissionTemplate(studentName, assignmentTitle, adminEmail),
     };
-    
+
     console.log("Email options:", JSON.stringify(mailOptions, null, 2));
-    
+
     const info = await transporter.sendMail(mailOptions);
-    
+
     console.log("Yandex email sent successfully:", info);
     return { success: true, data: info };
   } catch (error) {
@@ -202,11 +208,20 @@ async function sendGradedSubmissionEmail(
   maxScore,
   feedback
 ) {
-  console.log("sendGradedSubmissionEmail called with:", { 
-    studentEmail, assignmentTitle, score, maxScore, feedback 
+  console.log("sendGradedSubmissionEmail called with:", {
+    studentEmail,
+    assignmentTitle,
+    score,
+    maxScore,
+    feedback,
   });
-  
-  if (!studentEmail || !assignmentTitle || score === undefined || maxScore === undefined) {
+
+  if (
+    !studentEmail ||
+    !assignmentTitle ||
+    score === undefined ||
+    maxScore === undefined
+  ) {
     const error = "Missing required parameters for graded submission email";
     console.error(error);
     return { success: false, error };
@@ -214,8 +229,10 @@ async function sendGradedSubmissionEmail(
 
   try {
     const transporter = createYandexTransporter();
-    console.log("Yandex transporter created, attempting to send graded email...");
-    
+    console.log(
+      "Yandex transporter created, attempting to send graded email..."
+    );
+
     const mailOptions = {
       from: `"Сайт преподавателя" <${process.env.YANDEX_USER}>`,
       to: studentEmail,
@@ -227,11 +244,11 @@ async function sendGradedSubmissionEmail(
         feedback
       ),
     };
-    
+
     console.log("Graded email options:", JSON.stringify(mailOptions, null, 2));
-    
+
     const info = await transporter.sendMail(mailOptions);
-    
+
     console.log("Yandex graded email sent successfully:", info);
     return { success: true, data: info };
   } catch (error) {
@@ -278,7 +295,9 @@ function getNewSubmissionTemplate(studentName, assignmentTitle, adminEmail) {
           <div class="footer">
             <p>Сайт преподавателя информатики<br>
             Дмитрий Андреевич Тепляшин<br>
-            Отправлено через Gmail: ${process.env.GMAIL_USER || 'email не настроен'}</p>
+            Отправлено через Yandex Mail: ${
+              process.env.YANDEX_USER || "email не настроен"
+            }</p>
           </div>
         </div>
       </body>
@@ -345,7 +364,9 @@ function getGradedSubmissionTemplate(
           <div class="footer">
             <p>Сайт преподавателя информатики<br>
             Дмитрий Андреевич Тепляшин<br>
-            Отправлено через Yandex Mail: ${process.env.YANDEX_USER || 'email не настроен'}</p>
+            Отправлено через Yandex Mail: ${
+              process.env.YANDEX_USER || "email не настроен"
+            }</p>
           </div>
         </div>
       </body>

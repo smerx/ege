@@ -18,19 +18,18 @@ export async function sendEmailNotification(
 ): Promise<boolean> {
   console.log("=== CLIENT EMAIL START ===");
   console.log("Request:", JSON.stringify(request, null, 2));
-  
+
   // Отправляем письма только на продакшене (боевой домен)
   try {
     if (typeof window !== "undefined") {
       const hostname = window.location.hostname;
       const isProdDomain = hostname === "ege100.vercel.app";
       console.log("Environment check:", { hostname, isProdDomain });
-      
+
       if (!isProdDomain) {
-        console.log(
-          "Email notification skipped: non-production environment",
-          { hostname }
-        );
+        console.log("Email notification skipped: non-production environment", {
+          hostname,
+        });
         return true; // тихо пропускаем вне продакшена
       }
     }
@@ -50,7 +49,7 @@ export async function sendEmailNotification(
 
     console.log("Response status:", response.status);
     console.log("Response ok:", response.ok);
-    
+
     let responseData;
     try {
       responseData = await response.json();
@@ -64,7 +63,7 @@ export async function sendEmailNotification(
       console.error("Email API error:", {
         status: response.status,
         statusText: response.statusText,
-        data: responseData
+        data: responseData,
       });
       return false;
     }
