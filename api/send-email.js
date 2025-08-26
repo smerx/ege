@@ -1,26 +1,28 @@
-// Vercel API функция для отправки email через Gmail SMTP (CommonJS)
+// Vercel API функция для отправки email через Yandex Mail SMTP (CommonJS)
 const nodemailer = require("nodemailer");
 
-// Настройка Gmail транспорта
-function createGmailTransporter() {
+// Настройка Yandex Mail транспорта
+function createYandexTransporter() {
   return nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.yandex.ru',
+    port: 465,
+    secure: true, // true для 465, false для других портов
     auth: {
-      user: process.env.GMAIL_USER,
-      pass: process.env.GMAIL_PASS, // Пароль приложения (16 символов)
+      user: process.env.YANDEX_USER,
+      pass: process.env.YANDEX_PASS, // Пароль приложения
     },
   });
 }
 
 module.exports = async function handler(req, res) {
-  console.log("=== GMAIL EMAIL API START ===");
+  console.log("=== YANDEX EMAIL API START ===");
   console.log("Method:", req.method);
   console.log("Environment:", {
     VERCEL_ENV: process.env.VERCEL_ENV,
     NODE_ENV: process.env.NODE_ENV,
-    hasGmailUser: !!process.env.GMAIL_USER,
-    hasGmailPass: !!process.env.GMAIL_PASS,
-    gmailUser: process.env.GMAIL_USER || "not set"
+    hasYandexUser: !!process.env.YANDEX_USER,
+    hasYandexPass: !!process.env.YANDEX_PASS,
+    yandexUser: process.env.YANDEX_USER || "not set"
   });
 
   // Устанавливаем CORS заголовки
@@ -54,14 +56,14 @@ module.exports = async function handler(req, res) {
     });
   }
 
-  // Проверяем Gmail настройки
-  if (!process.env.GMAIL_USER || !process.env.GMAIL_PASS) {
-    console.error("Gmail credentials missing!", {
-      hasUser: !!process.env.GMAIL_USER,
-      hasPass: !!process.env.GMAIL_PASS
+  // Проверяем Yandex настройки
+  if (!process.env.YANDEX_USER || !process.env.YANDEX_PASS) {
+    console.error("Yandex credentials missing!", {
+      hasUser: !!process.env.YANDEX_USER,
+      hasPass: !!process.env.YANDEX_PASS
     });
     return res.status(500).json({ 
-      error: "Gmail service configuration missing",
+      error: "Yandex Mail service configuration missing",
       success: false 
     });
   }
@@ -151,7 +153,7 @@ module.exports = async function handler(req, res) {
       success: false 
     });
   } finally {
-    console.log("=== GMAIL EMAIL API END ===");
+    console.log("=== YANDEX EMAIL API END ===");
   }
 };
 
@@ -170,11 +172,11 @@ async function sendNewSubmissionEmail(
   }
 
   try {
-    const transporter = createGmailTransporter();
-    console.log("Gmail transporter created, attempting to send email...");
+    const transporter = createYandexTransporter();
+    console.log("Yandex transporter created, attempting to send email...");
     
     const mailOptions = {
-      from: `"Сайт преподавателя" <${process.env.GMAIL_USER}>`,
+      from: `"Сайт преподавателя" <${process.env.YANDEX_USER}>`,
       to: adminEmail,
       subject: `📝 Новая работа от ${studentName}`,
       html: getNewSubmissionTemplate(studentName, assignmentTitle, adminEmail),
@@ -184,7 +186,7 @@ async function sendNewSubmissionEmail(
     
     const info = await transporter.sendMail(mailOptions);
     
-    console.log("Gmail email sent successfully:", info);
+    console.log("Yandex email sent successfully:", info);
     return { success: true, data: info };
   } catch (error) {
     console.error("Exception in sendNewSubmissionEmail:", error);
@@ -211,11 +213,11 @@ async function sendGradedSubmissionEmail(
   }
 
   try {
-    const transporter = createGmailTransporter();
-    console.log("Gmail transporter created, attempting to send graded email...");
+    const transporter = createYandexTransporter();
+    console.log("Yandex transporter created, attempting to send graded email...");
     
     const mailOptions = {
-      from: `"Сайт преподавателя" <${process.env.GMAIL_USER}>`,
+      from: `"Сайт преподавателя" <${process.env.YANDEX_USER}>`,
       to: studentEmail,
       subject: `✅ Работа проверена! ${assignmentTitle}`,
       html: getGradedSubmissionTemplate(
@@ -230,7 +232,7 @@ async function sendGradedSubmissionEmail(
     
     const info = await transporter.sendMail(mailOptions);
     
-    console.log("Gmail graded email sent successfully:", info);
+    console.log("Yandex graded email sent successfully:", info);
     return { success: true, data: info };
   } catch (error) {
     console.error("Exception in sendGradedSubmissionEmail:", error);
@@ -343,7 +345,7 @@ function getGradedSubmissionTemplate(
           <div class="footer">
             <p>Сайт преподавателя информатики<br>
             Дмитрий Андреевич Тепляшин<br>
-            Отправлено через Gmail: ${process.env.GMAIL_USER || 'email не настроен'}</p>
+            Отправлено через Yandex Mail: ${process.env.YANDEX_USER || 'email не настроен'}</p>
           </div>
         </div>
       </body>
